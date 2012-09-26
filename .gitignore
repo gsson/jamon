@@ -1,0 +1,16 @@
+*.pyc
+*.class
+.settings/
+.metadata/
+leases.tch
+subscribers.tch
+bin/
+External Plug-in Libraries/
+*.launch
+*...args
+*/build.xml
+*/@dot.log
+.DS_Store
+testproj/
+.#*
+

@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Jamon-test
+Bundle-SymbolicName: se.fnord.jamon.test;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: Henrik Gustafsson
+Fragment-Host: se.fnord.jamon
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Require-Bundle: org.junit4;bundle-version="4.7.0"

@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Jamon
+Bundle-SymbolicName: se.fnord.jamon;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: Henrik Gustafsson
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Export-Package: se.fnord.jamon
