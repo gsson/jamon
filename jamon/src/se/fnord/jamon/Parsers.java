@@ -776,16 +776,16 @@ public final class Parsers {
 	}
 
 	public static Node parse(Consumer parser, CharSequence input) throws ParseException, FatalParseException {
-		ParseContext context = Contexts.create(input.toString());
+		final ParseContext context = Contexts.create(input.toString());
 		final Node root = new Node(null);
-		ParseContext remaining = parser.consume(context, root);
+		final ParseContext remaining = parser.consume(context, root);
 		if (remaining.length() > 0)
 			throw new ParseException("Remaining characters: " + remaining.toString());
 		return root.firstChild();
 	}
 
 	public static Node sloppyParse(Consumer parser, CharSequence input) throws ParseException, FatalParseException {
-		ParseContext context = Contexts.create(input.toString());
+		final ParseContext context = Contexts.create(input.toString());
 		final Node root = new Node(null);
 		parser.consume(context, root);
 		return root.firstChild();
