@@ -8,7 +8,7 @@ import java.util.Objects;
 import se.fnord.jamon.internal.Contexts;
 
 public final class Parsers {
-	private static class StaticAttachmentFactory implements AttachmentFactory {
+	private static final class StaticAttachmentFactory implements AttachmentFactory {
 		private final Object o;
 
 		public StaticAttachmentFactory(Object o) {
@@ -342,6 +342,23 @@ public final class Parsers {
 		}
 	}
 
+	private static final class EndOfInputTransform implements Transformer {
+		private EndOfInputTransform() {
+		}
+
+		@Override
+		public String toString() {
+			return "endOfInput";
+		}
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+			if (input.length() > 0)
+				throw new ParseException("End of input expected");
+			return input;
+		}
+	}
+
 	private static final class IgnoreTransform implements Transformer {
 		private final Consumer parser;
 
@@ -357,6 +374,33 @@ public final class Parsers {
 		@Override
 		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
 			return parser.consume(input, new Node(null));
+		}
+	}
+
+	private static final class InputPreservingParser extends AbstractParser {
+		private final Consumer parser;
+
+		private InputPreservingParser(AttachmentFactory attachment, Consumer parser) {
+			super(attachment);
+			this.parser = parser;
+		}
+
+		@Override
+		public String toString() {
+			return "preserve[" + parser + "]";
+		}
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+			Node me = new Node();
+			parser.consume(input, me);
+			parent.addChildren(me);
+			return input;
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory f) {
+			return new InputPreservingParser(f, parser);
 		}
 	}
 
@@ -753,6 +797,14 @@ public final class Parsers {
 		return new SequenceParser(null, parsers);
 	}
 
+	public static Parser preserve(final Consumer parser) {
+		return new InputPreservingParser(null, parser);
+	}
+
+	public static Transformer peek(final Consumer parser) {
+		return skip(preserve(parser));
+	}
+
 	public static Parser join(final Consumer parser) {
 		return new JoinTransform(parser, "", null);
 	}
@@ -769,6 +821,14 @@ public final class Parsers {
 		if (parsers.length == 0)
 			throw new IllegalArgumentException("At least one parser required as argument");
 		return new AlternativeParser(null, parsers);
+	}
+
+	public static Transformer endOfInput() {
+		return new EndOfInputTransform();
+	}
+
+	public static Parser terminal(Consumer p) {
+		return lsequence(p, endOfInput());
 	}
 
 	public static ParserReference reference() {
