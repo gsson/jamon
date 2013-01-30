@@ -1,5 +1,6 @@
 package se.fnord.jamon;
 
+import java.util.Arrays;
 import java.util.HashSet;
 
 public class Matchers {
@@ -10,6 +11,11 @@ public class Matchers {
             public boolean match(char ch) {
 				return !matcher.match(ch);
             }
+
+			@Override
+			public String toString() {
+				return "not("+matcher+")";
+			}
 		};
 	}
 
@@ -26,6 +32,11 @@ public class Matchers {
 						return false;
 				return true;
             }
+
+			@Override
+			public String toString() {
+				return "and("+Arrays.toString(matchers)+")";
+			}
 		};
 	}
 
@@ -38,6 +49,11 @@ public class Matchers {
 						return true;
 				return false;
             }
+
+			@Override
+			public String toString() {
+				return "or("+Arrays.toString(matchers)+")";
+			}
 		};
 	}
 
