@@ -68,7 +68,7 @@ public class Node {
 	void attachment(Object attachment) {
 		this.attachment = attachment;
 	}
-	
+
 	Node addChildren(Node ... nodes) {
 		for (final Node node : nodes)
 			children.add(node);
@@ -139,13 +139,13 @@ public class Node {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder(String.format("Node[(%d, %d)", start, end));
+		StringBuilder sb = new StringBuilder(String.format("N[(%d, %d)", start, end));
 		if (attachment != null)
-			sb.append(", attachment=").append(attachment);
+			sb.append(", attach=").append(attachment);
 		if (value != null)
-			sb.append(", value=\"").append(value).append("\"");
+			sb.append(", val=\"").append(value).append("\"");
 		if (!children.isEmpty())
-			sb.append(", children=").append(toString(children));
+			sb.append(", child=").append(toString(children));
 
 		return sb.append("]").toString();
 	}

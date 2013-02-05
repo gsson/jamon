@@ -562,7 +562,7 @@ public final class Parsers {
 	 * FatalParseExceptions.
 	 * <p>
 	 * @param parser The parser that will create the node
-	 * 
+	 *
 	 * @return The composite parser
 	 */
 	public static Parser require(final Parser parser) {
@@ -584,7 +584,7 @@ public final class Parsers {
 	 * <p>
 	 * @param parser The parser that will create the node
 	 * @param strip The matcher that indicates characters to strip.
-	 * 
+	 *
 	 * @return The composite parser
 	 */
 	public static Parser strip(final Consumer parser, final Matcher strip) {
@@ -601,7 +601,7 @@ public final class Parsers {
 	 * <code>strip(parser, Matchers.white())</code>
 	 * <p>
 	 * @param parser The parser that will create the node
-	 * 
+	 *
 	 * @return The composite parser
 	 */
 	public static Parser strip(final Consumer parser) {
@@ -618,7 +618,7 @@ public final class Parsers {
 	 * <code>matches(1, -1, matcher)</code>
 	 * <p>
 	 * @param matcher The matcher to collect characters
-	 * 
+	 *
 	 * @return The parser
 	 */
 	public static Parser matches(final Matcher matcher) {
@@ -636,7 +636,7 @@ public final class Parsers {
 	 * <p>
 	 * @param min The minimum number of matching characters for this parser to return successfully.
 	 * @param matcher The matcher to collect characters
-	 * 
+	 *
 	 * @return The parser
 	 */
 	public static Parser matches(final int min, final Matcher matcher) {
@@ -651,7 +651,7 @@ public final class Parsers {
 	 * @param min The minimum number of matching characters for this parser to return successfully.
 	 * @param max The maximum number of matching characters for this parser to return successfully.
 	 * @param matcher The matcher to collect characters
-	 * 
+	 *
 	 * @return The parser
 	 */
 	public static Parser matches(final int min, final int max, final Matcher matcher) {
@@ -671,7 +671,7 @@ public final class Parsers {
 	 * @param min The minimum number of matching characters for this parser to return successfully.
 	 * @param max The maximum number of matching characters for this parser to return successfully.
 	 * @param chars The characters to match
-	 * 
+	 *
 	 * @return The parser
 	 */
 	public static Parser matches(final int min, final int max, final char ... chars) {
@@ -682,7 +682,7 @@ public final class Parsers {
 	 * Returns a parser matches exactly the provided string.
 	 * <p>
 	 * @param token The string to match
-	 * 
+	 *
 	 * @return The parser
 	 */
 	public static Parser exact(final String token) {
@@ -696,7 +696,7 @@ public final class Parsers {
 	 * Returns a parser matches exactly one of the provided strings.
 	 * <p>
 	 * @param alternatives The strings to match
-	 * 
+	 *
 	 * @return The parser
 	 */
 	public static Parser oneOf(final String... alternatives) {
@@ -761,6 +761,32 @@ public final class Parsers {
 
 	public static Parser repeat(final int min, final int max, final Consumer parser) {
 		return new RepeatParser(parser, null, min, max);
+	}
+
+	/**
+	 * Parses a sequence between two simple delimiters, for example ( seq )
+	 * <p>
+	 * @param lsep left separator
+	 * @param item parser called between separators
+	 * @param rsep right separator
+	 *
+	 * @return Parser
+	 */
+	public static Parser between(final String lsep, final Consumer item, final String rsep) {
+		return sequence(skip(lsep), item, skip(rsep));
+	}
+
+	/**
+	 * Variant of between() that lifts central item
+	 * <p>
+	 * @param lsep left separator
+	 * @param item parser called between separators
+	 * @param rsep right separator
+	 *
+	 * @return Parser
+	 */
+	public static Parser lbetween(final String lsep, final Consumer item, final String rsep) {
+		return sequence(skip(lsep), lift(item), skip(rsep));
 	}
 
 	public static Parser delimitedSequence(final Consumer item, final String delimiter) {

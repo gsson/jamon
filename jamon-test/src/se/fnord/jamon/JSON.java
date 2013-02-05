@@ -9,11 +9,12 @@ import static se.fnord.jamon.Matchers.or;
 import static se.fnord.jamon.Matchers.and;
 import static se.fnord.jamon.Matchers.white;
 import static se.fnord.jamon.Parsers.alternative;
+import static se.fnord.jamon.Parsers.between;
+import static se.fnord.jamon.Parsers.lbetween;
 import static se.fnord.jamon.Parsers.delimitedSequence;
 import static se.fnord.jamon.Parsers.exact;
 import static se.fnord.jamon.Parsers.join;
 import static se.fnord.jamon.Parsers.lalternative;
-import static se.fnord.jamon.Parsers.lift;
 import static se.fnord.jamon.Parsers.matches;
 import static se.fnord.jamon.Parsers.oneOf;
 import static se.fnord.jamon.Parsers.optional;
@@ -58,7 +59,7 @@ public class JSON {
 		);
 
 		final Parser string =
-		    join(sequence(skip("\""), repeat(alternative(unquoted, quoted)), skip("\""))).attach(JsonType.STRING);
+				join(between("\"", repeat(alternative(unquoted, quoted)), "\"")).attach(JsonType.STRING);
 		return string;
 	}
 
@@ -97,8 +98,8 @@ public class JSON {
 		final Consumer _number = unpad(numberParser());
 
 		final Consumer _entry = sequence(_string, skip(":"), _value).attach(JsonType.ENTRY);
-		final Consumer _object = unpad(sequence(skip("{"), lift(delimitedSequence(0, _entry, delimiter)), skip("}")).attach(JsonType.OBJECT));
-		final Consumer _array = unpad(sequence(skip("["), lift(delimitedSequence(0, _value, delimiter)), skip("]")).attach(JsonType.ARRAY));
+		final Consumer _object = unpad(lbetween("{", delimitedSequence(0, _entry, delimiter), "}").attach(JsonType.OBJECT));
+		final Consumer _array = unpad(lbetween("[", delimitedSequence(0, _value, delimiter), "]").attach(JsonType.ARRAY));
 
 		_value.setTarget(lalternative(_string, _number, _object, _array, _boolean, _null));
 
