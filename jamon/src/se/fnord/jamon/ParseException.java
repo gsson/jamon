@@ -13,4 +13,9 @@ public class ParseException extends Exception {
     public ParseException(String message, Throwable cause) {
     	super(message, cause);
     }
+
+    @Override
+    public Throwable fillInStackTrace() {
+    	return this;
+    }
 }
