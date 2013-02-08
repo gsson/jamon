@@ -53,7 +53,40 @@ public final class Parsers {
 		}
 	}
 
-	private static abstract class AbstractParser implements Parser {
+	private static abstract class AbstractConsumer implements Consumer {
+		void doApply(Node parent, Node me) {
+			throw new UnsupportedOperationException();
+		}
+
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+			throw new UnsupportedOperationException();
+		}
+
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+			Node me;
+			me = input.consumerMatched(this);
+			if (me != null) {
+				doApply(parent, me);
+				return input.splice(me.end());
+			}
+
+			try {
+				me = new Node(null);
+				final ParseContext remaining = doConsume(input, me);
+				me.start(input.start());
+				me.end(remaining.start());
+				input.consumerMatches(this, me);
+				doApply(parent, me);
+				return remaining;
+			}
+			catch (ParseException e) {
+				input.consumerMismatches(this);
+				throw e;
+			}
+		}
+	}
+
+	private static abstract class AbstractParser extends AbstractConsumer implements Parser {
 		private static final AttachmentFactory NULL_FACTORY = new StaticAttachmentFactory(null);
 		protected final AttachmentFactory attachmentFactory;
 
@@ -133,14 +166,11 @@ public final class Parsers {
 			return new AlternativeParser(f, parsers);
 		}
 
-		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
-			Node me = new Node();
+		@Override
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
 			for (Consumer parser : parsers) {
 				try {
 					final ParseContext remaining = parser.consume(input, me);
-					parent.addChildren(me);
-					me.start(input.start());
-					me.end(remaining.start());
 					me.attachment(createAttachment(me.value(), me.children()));
 					return remaining;
 				}
@@ -148,6 +178,11 @@ public final class Parsers {
 				}
 			}
 			throw new ParseException("No matching alternative");
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+			parent.addChildren(me);
 		}
 	}
 
@@ -178,12 +213,14 @@ public final class Parsers {
 		}
 
 		@Override
-		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
-			Node me = new Node(null);
-			final ParseContext remaining = parser.consume(input, me);
-			parent.addChildren(input.node(remaining.start() - input.start(), join(joint, me),
-			    createAttachment(me.value(), me.children())));
-			return remaining;
+		ParseContext doConsume(ParseContext input, Node me)
+				throws ParseException, FatalParseException {
+			return parser.consume(input, me);
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+			parent.addChildren(new Node(me.start(), me.end(), join(joint, me), createAttachment(me.value(), me.children())));
 		}
 	}
 
@@ -213,21 +250,21 @@ public final class Parsers {
 		}
 
 		@Override
-		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
 			try {
-				Node me = new Node();
-				me.start(input.start());
 				for (Consumer parser : parsers)
 					input = parser.consume(input, me);
-
-				parent.addChildren(me);
-				me.end(input.start());
 				me.attachment(createAttachment(me.value(), me.children()));
-				return input;
 			}
 			catch (ParseException e) {
 				throw new ParseException("Sequence failed", e);
 			}
+			return input;
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+			parent.addChildren(me);
 		}
 	}
 
@@ -256,25 +293,25 @@ public final class Parsers {
 		}
 
 		@Override
-		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
-			Node me = new Node();
-			me.start(input.start());
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
 			int i = 0;
 			try {
 				while (max == -1 || i < max) {
 					input = parser.consume(input, me);
 					i++;
 				}
+				me.attachment(createAttachment(me.value(), me.children()));
 			}
 			catch (ParseException e) {
 			}
 			if (i < min)
 				throw new ParseException("Out of bounds");
-			me.end(input.start());
-			me.attachment(createAttachment(me.value(), me.children()));
-
-			parent.addChildren(me);
 			return input;
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+			parent.addChildren(me);
 		}
 	}
 
@@ -296,15 +333,14 @@ public final class Parsers {
 		}
 
 		@Override
-		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
-			final Node me = new Node(null);
-			me.start(input.start());
-			input = parser.consume(input, me);
-			for (Node m : me.children()) {
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+		    return parser.consume(input, me);
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+			for (Node m : me.children())
 				parent.addChildren(m.children());
-			}
-			me.end(input.start());
-			return input;
 		}
 	}
 
@@ -327,41 +363,36 @@ public final class Parsers {
 		}
 
 		@Override
-		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
-			final Node me = new Node(null);
-			me.start(input.start());
-			input = parser.consume(input, me);
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+		    return parser.consume(input, me);
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
 			for (Node m : me.children()) {
 				for (Node mm : m.children()) {
 					parent.addChildren(new Node(mm.start(), mm.end(), mm.value(), createAttachment(mm.value(), mm.children())));
 				}
 			}
-			me.end(input.start());
-			return input;
 		}
 	}
 
-	private static final class RequireTransform extends AbstractParser {
-		private final Parser parser;
+	private static final class RequireTransform implements Consumer {
+		private final Consumer consumer;
 
-		private RequireTransform(Parser parser) {
-			this.parser = parser;
+		public RequireTransform(Consumer consumer) {
+			this.consumer = consumer;
 		}
 
 		@Override
 		public String toString() {
-			return "require[" + parser + "]";
-		}
-
-		@Override
-		public Parser attachmentFactory(AttachmentFactory f) {
-			throw new IllegalStateException("Can not add attachments to references");
+			return "require[" + consumer + "]";
 		}
 
 		@Override
 		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
 			try {
-				return parser.consume(input, parent);
+				return consumer.consume(input, parent);
 			}
 			catch (ParseException e) {
 				throw new FatalParseException(e);
@@ -418,11 +449,15 @@ public final class Parsers {
 		}
 
 		@Override
-		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
-			Node me = new Node();
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
 			parser.consume(input, me);
+			me.attachment(createAttachment(me.value(), me.children()));
+		    return input;
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
 			parent.addChildren(me);
-			return input;
 		}
 
 		@Override
@@ -592,7 +627,7 @@ public final class Parsers {
 	 *
 	 * @return The composite parser
 	 */
-	public static Parser require(final Parser parser) {
+	public static Consumer require(final Parser parser) {
 		return new RequireTransform(parser);
 	}
 
