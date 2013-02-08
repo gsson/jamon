@@ -30,7 +30,7 @@ public class ParseContextImpl implements ParseContext {
 
 	@Override
 	public ParseContext splice(int index) {
-		return new ParseContextImpl(start + index, chars);
+		return new ParseContextImpl(index, chars, nodeCache);
 	}
 
 	@Override

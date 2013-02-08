@@ -434,7 +434,7 @@ public final class Parsers {
 
 			final Node me = input.node(i, token, createAttachment(token));
 			parent.addChildren(me);
-			return input.splice(i);
+			return input.splice(input.start() + i);
 		}
 	}
 
@@ -480,7 +480,7 @@ public final class Parsers {
 			final Node me = input.node(i, null);
 			me.attachment(createAttachment(me.value(), me.children()));
 			parent.addChildren(me);
-			return input.splice(i);
+			return input.splice(input.start() + i);
 		}
 	}
 
