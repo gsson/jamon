@@ -8,6 +8,33 @@ import java.util.Objects;
 import se.fnord.jamon.internal.Contexts;
 
 public final class Parsers {
+	public static final class Group implements Consumer {
+		private final String name;
+		private final Consumer parser;
+		public Group(String name, Consumer parser) {
+			this.name = name;
+			this.parser = parser;
+		}
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+			try {
+				return parser.consume(input, parent);
+			}
+			catch (ParseException e) {
+				throw new ParseException("Group " + name, e);
+			}
+			catch (FatalParseException e) {
+				throw new FatalParseException("Group " + name, e);
+			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("group[name=\"%s\", parser=%s]", name, parser);
+		}
+	}
+
 	private static final class StaticAttachmentFactory implements AttachmentFactory {
 		private final Object o;
 
@@ -859,6 +886,19 @@ public final class Parsers {
 
 	public static ParserReference reference() {
 		return new ParserReferenceImpl();
+	}
+
+	/**
+	 * Creates a grouping consumer.
+	 *
+	 * Mostly useful for debugging. Transparently delegates the consume() call to the provided parser.
+	 *
+	 * @param name The name of the group
+	 * @param parser The parser to delegate to
+	 * @return The group
+	 */
+	public static Group group(final String name, final Consumer parser) {
+		return new Group(name, parser);
 	}
 
 	public static Node parse(Consumer parser, CharSequence input) throws ParseException, FatalParseException {
