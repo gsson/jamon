@@ -3,10 +3,10 @@ package se.fnord.jamon;
 import java.util.Arrays;
 import java.util.HashSet;
 
-public class Matchers {
+public class CharacterMatchers {
 
-	public static Matcher not(final Matcher matcher) {
-		return new Matcher() {
+	public static CharacterMatcher not(final CharacterMatcher matcher) {
+		return new CharacterMatcher() {
 			@Override
             public boolean match(char ch) {
 				return !matcher.match(ch);
@@ -19,15 +19,15 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher not(char ... chars) {
+	public static CharacterMatcher not(char ... chars) {
 		return not(match(chars));
 	}
 
-	public static Matcher and(final Matcher ... matchers) {
-		return new Matcher() {
+	public static CharacterMatcher and(final CharacterMatcher ... matchers) {
+		return new CharacterMatcher() {
 			@Override
             public boolean match(char ch) {
-				for (Matcher matcher : matchers)
+				for (CharacterMatcher matcher : matchers)
 					if (!matcher.match(ch))
 						return false;
 				return true;
@@ -40,11 +40,11 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher or(final Matcher ... matchers) {
-		return new Matcher() {
+	public static CharacterMatcher or(final CharacterMatcher ... matchers) {
+		return new CharacterMatcher() {
 			@Override
             public boolean match(char ch) {
-				for (Matcher matcher : matchers)
+				for (CharacterMatcher matcher : matchers)
 					if (matcher.match(ch))
 						return true;
 				return false;
@@ -57,12 +57,12 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher newline() {
+	public static CharacterMatcher newline() {
 		return match('\r', '\n');
 	}
 
-	public static Matcher letter() {
-		return new Matcher() {
+	public static CharacterMatcher letter() {
+		return new CharacterMatcher() {
 			@Override
 			public boolean match(char ch) {
 				return Character.isLetter(ch);
@@ -75,8 +75,8 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher white() {
-		return new Matcher() {
+	public static CharacterMatcher white() {
+		return new CharacterMatcher() {
 			@Override
 			public boolean match(char ch) {
 				return Character.isWhitespace(ch) && ch != '\n' && ch != '\r';
@@ -89,8 +89,8 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher identifierStart() {
-		return new Matcher() {
+	public static CharacterMatcher identifierStart() {
+		return new CharacterMatcher() {
 			@Override
 			public boolean match(char ch) {
 				return Character.isJavaIdentifierStart(ch);
@@ -103,8 +103,8 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher identifierPart() {
-		return new Matcher() {
+	public static CharacterMatcher identifierPart() {
+		return new CharacterMatcher() {
 			@Override
 			public boolean match(char ch) {
 				return Character.isJavaIdentifierPart(ch);
@@ -117,8 +117,8 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher upper() {
-		return new Matcher() {
+	public static CharacterMatcher upper() {
+		return new CharacterMatcher() {
 			@Override
 			public boolean match(char ch) {
 				return Character.isUpperCase(ch);
@@ -131,8 +131,8 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher lower() {
-		return new Matcher() {
+	public static CharacterMatcher lower() {
+		return new CharacterMatcher() {
 			@Override
 			public boolean match(char ch) {
 				return Character.isLowerCase(ch);
@@ -145,8 +145,8 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher digit() {
-		return new Matcher() {
+	public static CharacterMatcher digit() {
+		return new CharacterMatcher() {
 			@Override
 			public boolean match(char ch) {
 				return Character.isDigit(ch);
@@ -159,8 +159,8 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher digit(final int radix) {
-		return new Matcher() {
+	public static CharacterMatcher digit(final int radix) {
+		return new CharacterMatcher() {
 			@Override
 			public boolean match(char ch) {
 				return Character.digit(ch, radix) != -1;
@@ -173,8 +173,8 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher control() {
-		return new Matcher() {
+	public static CharacterMatcher control() {
+		return new CharacterMatcher() {
 			@Override
 			public boolean match(char ch) {
 				return Character.isISOControl(ch);
@@ -187,11 +187,11 @@ public class Matchers {
 		};
 	}
 
-	public static Matcher match(char ...chars) {
+	public static CharacterMatcher match(char ...chars) {
 		final HashSet<Character> characters = new HashSet<Character>(chars.length);
 		for (char ch : chars)
 			characters.add(ch);
-		return new Matcher() {
+		return new CharacterMatcher() {
 			@Override
             public boolean match(char ch) {
 	            return characters.contains(ch);

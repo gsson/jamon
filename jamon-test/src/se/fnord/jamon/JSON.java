@@ -1,13 +1,13 @@
 package se.fnord.jamon;
 
-import static se.fnord.jamon.Matchers.control;
-import static se.fnord.jamon.Matchers.digit;
-import static se.fnord.jamon.Matchers.match;
-import static se.fnord.jamon.Matchers.newline;
-import static se.fnord.jamon.Matchers.not;
-import static se.fnord.jamon.Matchers.or;
-import static se.fnord.jamon.Matchers.and;
-import static se.fnord.jamon.Matchers.white;
+import static se.fnord.jamon.CharacterMatchers.control;
+import static se.fnord.jamon.CharacterMatchers.digit;
+import static se.fnord.jamon.CharacterMatchers.match;
+import static se.fnord.jamon.CharacterMatchers.newline;
+import static se.fnord.jamon.CharacterMatchers.not;
+import static se.fnord.jamon.CharacterMatchers.or;
+import static se.fnord.jamon.CharacterMatchers.and;
+import static se.fnord.jamon.CharacterMatchers.white;
 import static se.fnord.jamon.Parsers.alternative;
 import static se.fnord.jamon.Parsers.between;
 import static se.fnord.jamon.Parsers.lbetween;

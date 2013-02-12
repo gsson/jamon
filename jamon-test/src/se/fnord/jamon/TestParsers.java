@@ -1,7 +1,7 @@
 package se.fnord.jamon;
 
 import static org.junit.Assert.assertEquals;
-import static se.fnord.jamon.Matchers.letter;
+import static se.fnord.jamon.CharacterMatchers.letter;
 import static se.fnord.jamon.Parsers.alternative;
 import static se.fnord.jamon.Parsers.exact;
 import static se.fnord.jamon.Parsers.lift;

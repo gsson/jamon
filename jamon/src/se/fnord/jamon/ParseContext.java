@@ -2,9 +2,12 @@ package se.fnord.jamon;
 
 public interface ParseContext {
 	int start();
+	int end();
 	int length();
 	char charAt(int index);
-	ParseContext splice(int end);
+	ParseContext splice(int splicePoint);
+	ParseContext splice(int splicePoint, int end);
+
 
 	Node consumerMatched(Consumer group) throws ParseException;
 	Node consumerMatches(Consumer group, Node node);

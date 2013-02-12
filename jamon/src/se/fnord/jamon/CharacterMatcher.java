@@ -1,5 +1,5 @@
 package se.fnord.jamon;
 
-public interface Matcher {
+public interface CharacterMatcher {
 	boolean match(char ch);
 }

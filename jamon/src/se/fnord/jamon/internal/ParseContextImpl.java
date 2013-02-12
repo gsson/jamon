@@ -52,15 +52,21 @@ public class ParseContextImpl implements ParseContext {
 
 	private final Map<CacheKey, Node> nodeCache;
 	private final char[] chars;
-	private int start;
+	private final int start;
+	private final int end;
 
 	ParseContextImpl(int start, char[] chars) {
 		this(start, chars, new HashMap<CacheKey, Node>());
 	}
 
 	ParseContextImpl(int start, char[] chars, Map<CacheKey, Node> nodeCache) {
+		this(start, chars.length, chars, new HashMap<CacheKey, Node>());
+	}
+
+	ParseContextImpl(int start, int end, char[] chars, Map<CacheKey, Node> nodeCache) {
 		this.chars = chars;
 		this.start = start;
+		this.end = end;
 		this.nodeCache = nodeCache;
 	}
 
@@ -95,18 +101,30 @@ public class ParseContextImpl implements ParseContext {
 	}
 
 	@Override
+	public int end() {
+		return end;
+	}
+
+	@Override
 	public int length() {
-		return chars.length - start;
+		return end - start;
 	}
 
 	@Override
 	public char charAt(int index) {
+		if (index >= end)
+			throw new IndexOutOfBoundsException();
 		return chars[start + index];
 	}
 
 	@Override
-	public ParseContext splice(int index) {
-		return new ParseContextImpl(index, chars, nodeCache);
+	public ParseContext splice(int splicePoint) {
+		return new ParseContextImpl(splicePoint, end, chars, nodeCache);
+	}
+
+	@Override
+	public ParseContext splice(int splicePoint, int end) {
+		return new ParseContextImpl(splicePoint, end, chars, nodeCache);
 	}
 
 	@Override

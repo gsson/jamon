@@ -8,6 +8,28 @@ import java.util.Objects;
 import se.fnord.jamon.internal.Contexts;
 
 public final class Parsers {
+	public static final class SubParser implements Consumer {
+		private final Consumer scanner;
+		private final Consumer parser;
+		public SubParser(Consumer scanner, Consumer parser) {
+			this.scanner = scanner;
+			this.parser = parser;
+		}
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+			ParseContext limit = scanner.consume(input, new Node());
+			limit = input.splice(input.start(), limit.start());
+			limit = parser.consume(limit, parent);
+			return input.splice(limit.start(), input.end());
+		}
+
+		@Override
+		public String toString() {
+			return String.format("subparser[scanner=%s, parser=%s]", scanner, parser);
+		}
+	}
+
 	public static final class Group implements Consumer {
 		private final String name;
 		private final Consumer parser;
@@ -503,9 +525,9 @@ public final class Parsers {
 	private static final class MatchParser extends AbstractParser {
 		private final int min;
 		private final int max;
-		private final Matcher matcher;
+		private final CharacterMatcher matcher;
 
-		private MatchParser(AttachmentFactory attachment, int min, int max, Matcher matcher) {
+		private MatchParser(AttachmentFactory attachment, int min, int max, CharacterMatcher matcher) {
 			super(attachment);
 			this.min = min;
 			this.max = max;
@@ -649,7 +671,7 @@ public final class Parsers {
 	 *
 	 * @return The composite parser
 	 */
-	public static Parser strip(final Consumer parser, final Matcher strip) {
+	public static Parser strip(final Consumer parser, final CharacterMatcher strip) {
 		return lsequence(ignore(strip), parser, ignore(strip));
 	}
 
@@ -667,7 +689,7 @@ public final class Parsers {
 	 * @return The composite parser
 	 */
 	public static Parser strip(final Consumer parser) {
-		return strip(parser, Matchers.white());
+		return strip(parser, CharacterMatchers.white());
 	}
 
 	/**
@@ -683,7 +705,7 @@ public final class Parsers {
 	 *
 	 * @return The parser
 	 */
-	public static Parser matches(final Matcher matcher) {
+	public static Parser matches(final CharacterMatcher matcher) {
 		return matches(1, -1, matcher);
 	}
 
@@ -701,7 +723,7 @@ public final class Parsers {
 	 *
 	 * @return The parser
 	 */
-	public static Parser matches(final int min, final Matcher matcher) {
+	public static Parser matches(final int min, final CharacterMatcher matcher) {
 		return matches(min, -1, matcher);
 	}
 
@@ -716,7 +738,7 @@ public final class Parsers {
 	 *
 	 * @return The parser
 	 */
-	public static Parser matches(final int min, final int max, final Matcher matcher) {
+	public static Parser matches(final int min, final int max, final CharacterMatcher matcher) {
 		return new MatchParser(null, min, max, matcher);
 	}
 
@@ -737,7 +759,7 @@ public final class Parsers {
 	 * @return The parser
 	 */
 	public static Parser matches(final int min, final int max, final char ... chars) {
-		return new MatchParser(null, min, max, Matchers.match(chars));
+		return new MatchParser(null, min, max, CharacterMatchers.match(chars));
 	}
 
 	/**
@@ -769,7 +791,7 @@ public final class Parsers {
 		return lalternative(parsers);
 	}
 
-	public static Transformer ignore(final Matcher matcher) {
+	public static Transformer ignore(final CharacterMatcher matcher) {
 		return skip(matches(0, -1, matcher));
 	}
 
@@ -777,7 +799,7 @@ public final class Parsers {
 		return skip(exact(token));
 	}
 
-	public static Transformer skip(final Matcher matcher) {
+	public static Transformer skip(final CharacterMatcher matcher) {
 		return skip(matches(matcher));
 	}
 
@@ -855,7 +877,7 @@ public final class Parsers {
 		return delimitedSequence(1, item, skip(delimiter));
 	}
 
-	public static Parser delimitedSequence(final Consumer item, final Matcher delimiter) {
+	public static Parser delimitedSequence(final Consumer item, final CharacterMatcher delimiter) {
 		return delimitedSequence(1, item, skip(delimiter));
 	}
 
@@ -867,7 +889,7 @@ public final class Parsers {
 		return delimitedSequence(min, item, skip(delimiter));
 	}
 
-	public static Parser delimitedSequence(final int min, final Consumer item, final Matcher delimiter) {
+	public static Parser delimitedSequence(final int min, final Consumer item, final CharacterMatcher delimiter) {
 		return delimitedSequence(min, item, skip(delimiter));
 	}
 
@@ -936,8 +958,12 @@ public final class Parsers {
 		return new Group(name, parser);
 	}
 
+	public static Consumer subparse(final Consumer scanner, final Consumer parser) {
+		return new SubParser(scanner, parser);
+	}
+
 	public static Node parse(Consumer parser, CharSequence input) throws ParseException, FatalParseException {
-		final ParseContext context = Contexts.create(input.toString());
+		final ParseContext context = Contexts.parseContext(input.toString());
 		final Node root = new Node(null);
 		final ParseContext remaining = parser.consume(context, root);
 		if (remaining.length() > 0)
@@ -946,7 +972,7 @@ public final class Parsers {
 	}
 
 	public static Node sloppyParse(Consumer parser, CharSequence input) throws ParseException, FatalParseException {
-		final ParseContext context = Contexts.create(input.toString());
+		final ParseContext context = Contexts.parseContext(input.toString());
 		final Node root = new Node(null);
 		parser.consume(context, root);
 		return root.firstChild();
