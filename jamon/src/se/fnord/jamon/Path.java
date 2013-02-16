@@ -9,7 +9,27 @@ public class Path {
 		this.path = path;
     }
 
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!(obj instanceof Path))
+			return false;
+		final Path other = (Path) obj;
+		if (path.length != other.path.length)
+			return false;
+		for (int i = 0; i < path.length; i++)
+			if (!path[i].shallowEquals(other.path[i]))
+				return false;
+		return true;
+	}
 
+	@Override
+	public int hashCode() {
+		int n = 0;
+		for (int i = 0; i < path.length; i++)
+			n = n + 31 * path[i].hashCode();
+		return n;
 	}
 
 	public Node root() {
@@ -29,6 +49,10 @@ public class Path {
 		return new Path(newPath);
 	}
 
+	public Path forParent() {
+		final Node[] newPath = Arrays.copyOf(path, path.length - 1);
+		return new Path(newPath);
+	}
 
 	private static void checkPath(Node[] path) {
 		if (path.length == 0)
