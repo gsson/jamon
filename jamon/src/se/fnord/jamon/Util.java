@@ -4,8 +4,8 @@ public class Util {
 	/**
 	 * Verify a parse tree
 	 */
-	static void assertMatch(NodeMatcher matcher, Node ... path) {
-		if (!NodeMatchers.match(matcher, path))
+	public static void assertMatches(NodeMatcher matcher, Node ... path) {
+		if (!NodeMatchers.match(matcher, Path.path(path)))
 			throw new AssertionError("NodeMatcher does not match the provided path");
 	}
 }

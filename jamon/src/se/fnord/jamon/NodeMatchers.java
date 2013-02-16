@@ -156,8 +156,8 @@ public class NodeMatchers {
 	 * @param path Nodes describing the path to the node where the matcher should start.
 	 * @return true if the matcher succeeds, false otherwise.
 	 */
-	public static boolean match(NodeMatcher matcher, Node ... path) {
+	public static boolean match(NodeMatcher matcher, Path path) {
 		final NodeContext context = Contexts.nodeContext(path);
-		return matcher.match(context, path[path.length - 1]);
+		return matcher.match(context, path.leaf());
 	}
 }
