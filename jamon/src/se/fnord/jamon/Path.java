@@ -6,28 +6,10 @@ public class Path {
 	private final Node[] path;
 
 	private Path(Node[] path) {
-		if (path.length == 0)
-			throw new IllegalStateException("Broken path");
-		else if (path.length > 1)
-			checkPath(path, 0);
-		this.path = path.clone();
+		this.path = path;
     }
 
-	private Path(Node[] head, Node tail) {
-		if (!head[head.length - 1].children().contains(tail))
-			throw new IllegalStateException("Provided node is not a child of the last node in the path");
-		this.path = Arrays.copyOf(head, head.length + 1);
-		this.path[this.path.length - 1] = tail;
-    }
 
-	private void checkPath(Node[] path, int start) {
-		if (start == path.length)
-			return;
-		int next = start + 1;
-		Node nextNode = path[next];
-		if (path[start].children().contains(nextNode))
-			checkPath(path, next);
-		throw new IllegalStateException("Broken path");
 	}
 
 	public Node root() {
@@ -37,12 +19,33 @@ public class Path {
 	public Node leaf() {
 		return path[path.length - 1];
 	}
-	
-    public Path forChild(Node n) {
-	    return new Path(path, n);
-    }
-    
+
+	public Path forChild(Node n) {
+		if (!leaf().children().contains(n))
+			throw new IllegalStateException("Provided node is not a child of the last node in the path");
+
+		final Node[] newPath = Arrays.copyOf(path, path.length + 1);
+		newPath[newPath.length - 1] = n;
+		return new Path(newPath);
+	}
+
+
+	private static void checkPath(Node[] path) {
+		if (path.length == 0)
+			throw new IllegalStateException("Broken path");
+
+		Node parent = path[0];
+		for (int i = 1; i < path.length; i++) {
+			Node current = path[i];
+			if (!parent.children().contains(current))
+				throw new IllegalStateException("Broken path");
+			parent = current;
+		}
+	}
+
     public static Path path(Node ...nodes) {
+    	nodes = nodes.clone();
+    	checkPath(nodes);
     	return new Path(nodes);
     }
 }
