@@ -14,4 +14,9 @@ public class NodeContextImpl implements NodeContext {
     public NodeContext forChild(Node n) {
 	    return new NodeContextImpl(path.forChild(n));
     }
+
+	@Override
+    public NodeContext forParent() {
+	    return new NodeContextImpl(path.forParent());
+    }
 }
