@@ -1,6 +1,7 @@
 package se.fnord.jamon;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import se.fnord.jamon.internal.Contexts;
@@ -43,9 +44,10 @@ public class NodeMatchers {
 
 		@Override
 		public boolean match(NodeContext context, Node n) {
-			for (Node c : n.children())
-				if (!childMatcher.match(context, c))
+			for (Node c : n.children()) {
+				if (!context.forChild(c).matches(childMatcher))
 					return false;
+			}
 			return true;
 		}
 
@@ -115,12 +117,16 @@ public class NodeMatchers {
 
 		@Override
 		public boolean match(NodeContext context, Node n) {
-			if (matchers.length != n.children().size())
+			final List<Node> children = n.children();
+			final int childCount = children.size();
+
+			if (matchers.length != childCount)
 				return false;
-			int i = 0;
-			for (Node c : n.children())
-				if (!matchers[i++].match(context, c))
+			for (int i = 0; i < childCount; i++) {
+				Node child = children.get(i);
+				if (!context.forChild(child).matches(matchers[i]))
 					return false;
+			}
 			return true;
 		}
 
@@ -148,7 +154,7 @@ public class NodeMatchers {
 		@Override
 		public boolean match(NodeContext context, Node n) {
 			for (NodeMatcher v : matchers)
-				if (!v.match(context, n))
+				if (!context.matches(v))
 					return false;
 			return true;
 		}
@@ -177,7 +183,7 @@ public class NodeMatchers {
 		@Override
 		public boolean match(NodeContext context, Node n) {
 			for (NodeMatcher v : matchers)
-				if (v.match(context, n))
+				if (context.matches(v))
 					return true;
 			return false;
 		}
@@ -290,6 +296,6 @@ public class NodeMatchers {
 	 */
 	public static boolean match(NodeMatcher matcher, Path path) {
 		final NodeContext context = Contexts.nodeContext(path);
-		return matcher.match(context, path.leaf());
+		return context.matches(matcher);
 	}
 }
