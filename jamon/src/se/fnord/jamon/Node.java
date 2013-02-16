@@ -4,8 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
-import se.fnord.jamon.internal.Util;
+import java.util.Objects;
 
 public class Node {
 	public static final int UNSET = -1;
@@ -101,7 +100,7 @@ public class Node {
 		if (!(obj instanceof Node))
 			return false;
 		final Node other = (Node) obj;
-		return (start == other.start) && (end == other.end) && Util.equals(value, other.value) && Util.equals(attachment, other.attachment) && children.equals(other.children);
+		return (start == other.start) && (end == other.end) && Objects.equals(value, other.value) && Objects.equals(attachment, other.attachment) && Objects.equals(children, other.children);
 	}
 
 	@Override
