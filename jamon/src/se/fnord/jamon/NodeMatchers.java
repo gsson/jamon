@@ -62,6 +62,29 @@ public class NodeMatchers {
 		}
 	}
 
+	private static final class ForParent implements NodeMatcher {
+		private final NodeMatcher parentMatcher;
+
+		public ForParent(NodeMatcher parentMatcher) {
+			this.parentMatcher = parentMatcher;
+        }
+
+		@Override
+		public boolean match(NodeContext context, Node n) {
+			return context.forParent().matches(parentMatcher);
+		}
+
+		@Override
+		public int hashCode() {
+		    return 3 + 31 * parentMatcher.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return (obj == this) || (obj instanceof ForParent) && Objects.equals(parentMatcher, ((ForParent) obj).parentMatcher);
+		}
+	}
+
 	private static final class Attachment implements NodeMatcher {
 		private final Object attachment;
 
@@ -76,7 +99,7 @@ public class NodeMatchers {
 
 		@Override
 		public int hashCode() {
-		    return 3 + 31 * Objects.hashCode(attachment);
+		    return 4 + 31 * Objects.hashCode(attachment);
 		}
 
 		@Override
@@ -99,7 +122,7 @@ public class NodeMatchers {
 
 		@Override
 		public int hashCode() {
-		    return 4 + 31 * Objects.hashCode(value);
+		    return 5 + 31 * Objects.hashCode(value);
 		}
 
 		@Override
@@ -132,7 +155,7 @@ public class NodeMatchers {
 
 		@Override
 		public int hashCode() {
-			int n = 5;
+			int n = 6;
 			for (NodeMatcher m : matchers)
 				n = n + 31 * m.hashCode();
 		    return n;
@@ -161,7 +184,7 @@ public class NodeMatchers {
 
 		@Override
 		public int hashCode() {
-			int n = 6;
+			int n = 7;
 			for (NodeMatcher m : matchers)
 				n = n + 31 * m.hashCode();
 		    return n;
@@ -190,7 +213,7 @@ public class NodeMatchers {
 
 		@Override
 		public int hashCode() {
-			int n = 7;
+			int n = 8;
 			for (NodeMatcher m : matchers)
 				n = n + 31 * m.hashCode();
 		    return n;
@@ -218,6 +241,15 @@ public class NodeMatchers {
 	 */
 	public static NodeMatcher forEachChild(final NodeMatcher matcher) {
 		return new ForEachChild(matcher);
+	}
+
+	/**
+	 * Verifies the parent against the supplied NodeMatcher
+	 * @param matcher The matcher to check the parent against
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher forParent(final NodeMatcher matcher) {
+		return new ForParent(matcher);
 	}
 
 	/**
