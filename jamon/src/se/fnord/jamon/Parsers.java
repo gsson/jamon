@@ -57,7 +57,7 @@ public final class Parsers {
 		}
 	}
 
-	private static final class StaticAttachmentFactory implements AttachmentFactory {
+	static final class StaticAttachmentFactory implements AttachmentFactory {
 		private final Object o;
 
 		public StaticAttachmentFactory(Object o) {
