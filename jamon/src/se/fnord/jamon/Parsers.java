@@ -963,7 +963,7 @@ public final class Parsers {
 	}
 
 	public static Node parse(Consumer parser, CharSequence input) throws ParseException, FatalParseException {
-		final ParseContext context = Contexts.parseContext(input.toString());
+		final ParseContext context = new Contexts().parseContext(input.toString());
 		final Node root = new Node(null);
 		final ParseContext remaining = parser.consume(context, root);
 		if (remaining.length() > 0)
@@ -972,7 +972,7 @@ public final class Parsers {
 	}
 
 	public static Node sloppyParse(Consumer parser, CharSequence input) throws ParseException, FatalParseException {
-		final ParseContext context = Contexts.parseContext(input.toString());
+		final ParseContext context = new Contexts().parseContext(input.toString());
 		final Node root = new Node(null);
 		parser.consume(context, root);
 		return root.firstChild();

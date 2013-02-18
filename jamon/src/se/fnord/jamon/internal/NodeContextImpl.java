@@ -58,10 +58,6 @@ public class NodeContextImpl implements NodeContext {
 		this.path = path;
     }
 	
-	public NodeContextImpl(Path path) {
-		this(path, new HashMap<CacheKey, Boolean>());
-    }
-
 	@Override
     public NodeContext forChild(Node n) {
 	    return new NodeContextImpl(path.forChild(n), matchCache);
