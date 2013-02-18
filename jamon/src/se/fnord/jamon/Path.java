@@ -72,4 +72,14 @@ public class Path {
     	checkPath(nodes);
     	return new Path(nodes);
     }
+
+    @Override
+    public String toString() {
+    	StringBuilder sb = new StringBuilder();
+    	sb.append(path[0].value());
+    	for (int i = 1; i < path.length; i++) {
+    		sb.append("/").append(path[i].value());
+    	}
+    	return sb.toString();
+    }
 }
