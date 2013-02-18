@@ -1,8 +1,10 @@
 package se.fnord.jamon;
 
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
-public class Path {
+public class Path implements Iterable<Node> {
 	private final Node[] path;
 
 	private Path(Node[] path) {
@@ -81,5 +83,28 @@ public class Path {
     		sb.append("/").append(path[i].value());
     	}
     	return sb.toString();
+    }
+
+	@Override
+    public Iterator<Node> iterator() {
+	    return new Iterator<Node>() {
+	    	private int i = 0;
+			@Override
+            public boolean hasNext() {
+	            return i < path.length;
+            }
+
+			@Override
+            public Node next() {
+				if (i == path.length)
+					throw new NoSuchElementException();
+	            return path[i++];
+            }
+
+			@Override
+            public void remove() {
+				throw new UnsupportedOperationException();
+            }
+	    };
     }
 }
