@@ -5,11 +5,35 @@ import java.util.List;
 import java.util.Objects;
 
 import se.fnord.jamon.internal.Contexts;
+import se.fnord.jamon.internal.PathStack;
 
 /**
  * Utility to verify parse trees
  */
 public class NodeMatchers {
+	private static final class Equality<T> implements Predicate<T> {
+		private final T reference;
+
+		public Equality(T reference) {
+			this.reference = reference;
+		}
+
+		@Override
+        public boolean test(T value) {
+	        return Objects.equals(reference, value);
+        }
+
+		@Override
+		public int hashCode() {
+		    return 16 + 31 * Objects.hashCode(reference);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return (obj == this) || (obj instanceof Equality) && Objects.equals(reference, ((Equality<?>) obj).reference);
+		}
+	}
+
 	private static final class ChildCount implements NodeMatcher {
 		private final int count;
 
@@ -29,8 +53,6 @@ public class NodeMatchers {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (obj == this)
-				return true;
 			return (obj == this) || (obj instanceof ChildCount) && count == ((ChildCount) obj).count;
 		}
 	}
@@ -86,48 +108,48 @@ public class NodeMatchers {
 	}
 
 	private static final class Attachment implements NodeMatcher {
-		private final Object attachment;
+		private final Predicate<Object> tester;
 
-		public Attachment(Object attachment) {
-			this.attachment = attachment;
+		public Attachment(Predicate<Object> tester) {
+			this.tester = tester;
         }
 
 		@Override
 		public boolean match(NodeContext context, Node n) {
-			return Objects.equals(attachment, n.attachment());
+			return tester.test(n.attachment());
 		}
 
 		@Override
 		public int hashCode() {
-		    return 4 + 31 * Objects.hashCode(attachment);
+		    return 4 + 31 * Objects.hashCode(tester);
 		}
 
 		@Override
 		public boolean equals(Object obj) {
-			return (obj == this) || (obj instanceof Attachment) && Objects.equals(attachment, ((Attachment) obj).attachment);
+			return (obj == this) || (obj instanceof Attachment) && Objects.equals(tester, ((Attachment) obj).tester);
 		}
 	}
 
 	private static final class Value implements NodeMatcher {
-		private final Object value;
+		private final Predicate<String> tester;
 
-		public Value(Object value) {
-			this.value = value;
+		public Value(Predicate<String> tester) {
+			this.tester = tester;
         }
 
 		@Override
 		public boolean match(NodeContext context, Node n) {
-			return Objects.equals(value, n.value());
+			return tester.test(n.value());
 		}
 
 		@Override
 		public int hashCode() {
-		    return 5 + 31 * Objects.hashCode(value);
+		    return 5 + 31 * Objects.hashCode(tester);
 		}
 
 		@Override
 		public boolean equals(Object obj) {
-			return (obj == this) || (obj instanceof Value) && Objects.equals(value, ((Value) obj).value);
+			return (obj == this) || (obj instanceof Value) && Objects.equals(tester, ((Value) obj).tester);
 		}
 	}
 
@@ -258,7 +280,16 @@ public class NodeMatchers {
 	 * @return the constructed NodeMatcher
 	 */
 	public static NodeMatcher attachment(final Object o) {
-		return new Attachment(o);
+		return testAttachment(new Equality<>(o));
+	}
+
+	/**
+	 * Verifies the node attachment
+	 * @param tester The predicate to use when testing the attachment value
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher testAttachment(final Predicate<Object> tester) {
+		return new Attachment(tester);
 	}
 
 	/**
@@ -266,8 +297,17 @@ public class NodeMatchers {
 	 * @param o The object to check for equality with the node value
 	 * @return the constructed NodeMatcher
 	 */
-	public static NodeMatcher value(final Object o) {
-		return new Value(o);
+	public static NodeMatcher value(final String s) {
+		return testValue(new Equality<>(s));
+	}
+
+	/**
+	 * Verifies the node value
+	 * @param o The object to check for equality with the node value
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher testValue(final Predicate<String> tester) {
+		return new Value(tester);
 	}
 
 	/**
@@ -308,7 +348,7 @@ public class NodeMatchers {
 	 * @param matchers The matchers to use when verifying children
 	 * @return the constructed NodeMatcher
 	 */
-	public static NodeMatcher node(final Object attachment, final Object value, final NodeMatcher ... children) {
+	public static NodeMatcher node(final Object attachment, final String value, final NodeMatcher ... children) {
 		return and(attachment(attachment), value(value), children(children));
 	}
 
@@ -327,7 +367,86 @@ public class NodeMatchers {
 	 * @return true if the matcher succeeds, false otherwise.
 	 */
 	public static boolean match(NodeMatcher matcher, Path path) {
-		final NodeContext context = Contexts.nodeContext(path);
+		final NodeContext context = new Contexts().nodeContext(path);
 		return context.matches(matcher);
+	}
+
+	private static class MatchFirstVisitor implements PathVisitor {
+		private final Contexts contextFactory;
+		private Path result;
+		private NodeMatcher matcher;
+
+		public MatchFirstVisitor(Contexts contextFactory, NodeMatcher matcher) {
+			this.contextFactory = contextFactory;
+			this.matcher = matcher;
+        }
+
+		@Override
+        public boolean visit(Path path) {
+			if (contextFactory.nodeContext(path).matches(matcher)) {
+				result = path;
+				return false;
+			}
+			return true;
+        }
+
+		public Path result() {
+	        return result;
+        }
+	}
+
+	public static void traverseBreadthFirst(Path path, PathVisitor visitor) {
+		if (!visitor.visit(path))
+			return;
+
+		PathStack stack = new PathStack();
+		stack.append(path, path.leaf().children());
+		while (!stack.isEmpty()) {
+			path = stack.poll();
+			if (!visitor.visit(path))
+				return;
+
+			stack.append(path, path.leaf().children());
+		}
+	}
+
+	public static void traverseDepthFirst(Path path, PathVisitor visitor) {
+		if (!visitor.visit(path))
+			return;
+
+		PathStack stack = new PathStack();
+		stack.prepend(path, path.leaf().children());
+		while (!stack.isEmpty()) {
+			System.err.println(stack);
+			path = stack.poll();
+			if (!visitor.visit(path))
+				return;
+
+			stack.prepend(path, path.leaf().children());
+		}
+	}
+
+	/**
+	 * Find the first node matching the matcher using a depth first search.
+	 * @param matcher matcher to execute
+	 * @param path Nodes describing the path to the root of the sub-tree to search.
+	 * @return the first matching node found.
+	 */
+	public static Path findFirstDF(NodeMatcher matcher, Path path) {
+		MatchFirstVisitor visitor = new MatchFirstVisitor(new Contexts(), matcher);
+		traverseDepthFirst(path, visitor);
+		return visitor.result();
+	}
+
+	/**
+	 * Find the first node matching the matcher using a breadth first search.
+	 * @param matcher matcher to execute
+	 * @param path Nodes describing the path to the root of the sub-tree to search.
+	 * @return the first matching node found.
+	 */
+	public static Path findFirstBF(NodeMatcher matcher, Path path) {
+		MatchFirstVisitor visitor = new MatchFirstVisitor(new Contexts(), matcher);
+		traverseBreadthFirst(path, visitor);
+		return visitor.result();
 	}
 }
