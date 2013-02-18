@@ -87,4 +87,9 @@ public class NodeContextImpl implements NodeContext {
 
 		return result;
 	}
+
+	@Override
+	public Path path() {
+	    return path;
+	}
 }
