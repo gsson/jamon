@@ -1,7 +1,6 @@
 package se.fnord.jamon;
 
 import static org.junit.Assert.assertEquals;
-import static se.fnord.jamon.NodeMatchers.value;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,8 +74,7 @@ public final class TestNodeMatchers {
 
 	@Test
 	public void testFindFirst() {
-		Node tree = tree2();
+		tree2();
 		//System.err.println(NodeMatchers.findFirstBF(value("aaa"), Path.path(tree)).leaf().attachment());
 	}
-	
 }
