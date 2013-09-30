@@ -26,8 +26,6 @@ import static se.fnord.jamon.Parsers.sequence;
 import static se.fnord.jamon.Parsers.skip;
 import static se.fnord.jamon.Parsers.strip;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
 public class TestMiniExpParser {
