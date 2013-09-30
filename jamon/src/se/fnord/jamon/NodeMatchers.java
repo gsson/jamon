@@ -374,7 +374,7 @@ public class NodeMatchers {
 	private static class MatchFirstVisitor implements PathVisitor {
 		private final Contexts contextFactory;
 		private Path result;
-		private NodeMatcher matcher;
+		private final NodeMatcher matcher;
 
 		public MatchFirstVisitor(Contexts contextFactory, NodeMatcher matcher) {
 			this.contextFactory = contextFactory;
@@ -417,7 +417,6 @@ public class NodeMatchers {
 		PathStack stack = new PathStack();
 		stack.prepend(path, path.leaf().children());
 		while (!stack.isEmpty()) {
-			System.err.println(stack);
 			path = stack.poll();
 			if (!visitor.visit(path))
 				return;
