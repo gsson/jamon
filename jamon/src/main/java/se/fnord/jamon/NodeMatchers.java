@@ -294,7 +294,7 @@ public class NodeMatchers {
 
 	/**
 	 * Verifies the node value
-	 * @param o The object to check for equality with the node value
+	 * @param s The string to check for equality with the node value
 	 * @return the constructed NodeMatcher
 	 */
 	public static NodeMatcher value(final String s) {
@@ -303,7 +303,7 @@ public class NodeMatchers {
 
 	/**
 	 * Verifies the node value
-	 * @param o The object to check for equality with the node value
+	 * @param tester The predicate to use when testing the node value
 	 * @return the constructed NodeMatcher
 	 */
 	public static NodeMatcher testValue(final Predicate<String> tester) {
@@ -340,7 +340,7 @@ public class NodeMatchers {
 	/**
 	 * Verifies the attachment, value and children of a node.
 	 * Equivalent to:
- 	 * <p>
+	 * <p>
 	 * <code>and(attachment(attachment), value(value), children(children))</code>
 	 * <p>
 	 * @param attachment The object to check for equality with the node attachment
@@ -348,8 +348,8 @@ public class NodeMatchers {
 	 * @param matchers The matchers to use when verifying children
 	 * @return the constructed NodeMatcher
 	 */
-	public static NodeMatcher node(final Object attachment, final String value, final NodeMatcher ... children) {
-		return and(attachment(attachment), value(value), children(children));
+	public static NodeMatcher node(final Object attachment, final String value, final NodeMatcher ... matchers) {
+		return and(attachment(attachment), value(value), children(matchers));
 	}
 
 	/**
