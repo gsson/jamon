@@ -113,36 +113,4 @@ public class TestMiniExpParser {
 	static Parser wordBoundary(final String token) {
 		return lsequence(exact(token), peek(alternative(matches(not(identifierPart())), endOfInput())));
 	}
-
-
-	static Consumer ap() {
-		final Parser entity = identifier().attach("entity");
-		final Parser field = identifier().attach("field");
-
-		final ParserReference ref = reference();
-		final Consumer fieldRef = sequence(entity, lrepeat(1, -1, lsequence(sskip("."), field)), loptional(preserve(skip(sequence(sskip("."), field))))).attach("field reference");
-
-		final Consumer ap = Parsers.subparse(fieldRef, sequence(ref, sskip("."), field));
-		ref.setTarget(ap);
-
-		return ap;
-	}
-	
-	@Test
-	public void testAp() throws Exception {
-		Consumer ap = ap();
-		System.err.println(Parsers.parse(ap, "fnord.fnord.banan").dump());
-	}
-	/*
-	@Test
-	public void testPerformance() throws ParseException, FatalParseException {
-		final Parser p = expression();
-		for (int i = 0; i < 1000; i++)
-			Parsers.parse(p, "default(x[\"foo\"].y[\"bar\"].z(a.b[c]) + (d + e) / 42 * 17, a.b.c.d.e.f.g.h[\"ijklmnopqrstuv\"]) / 32");
-	}
-	public static void main(String[] args) throws ParseException, FatalParseException {
-		new TestMiniExpParser().testPerformance();
-	}
-	
-	 */
 }
