@@ -4,6 +4,7 @@
 .gradle/
 .settings/
 .metadata/
+.gradle/
 leases.tch
 subscribers.tch
 bin/
