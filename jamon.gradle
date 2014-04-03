@@ -1,0 +1,54 @@
+defaultTasks 'clean', 'build', 'jacocoTestReport', 'javadoc'
+
+apply plugin: 'sonar-runner'
+
+ext.startTime = new Date()
+
+sonarRunner {
+	sonarProperties {
+		property "sonar.projectKey", "Jamon"
+		property "sonar.projectName", "Combinatoric Parser for Java"
+	}
+}
+
+subprojects {
+	apply plugin: 'java'
+	apply plugin: 'eclipse'
+	apply plugin: 'jacoco'
+
+	sourceCompatibility = 1.7
+
+	test {
+		jacoco {
+			excludes << 'org.cojen.*'
+		}
+	}
+
+	sonarRunner {
+		sonarProperties {
+			property "sonar.junit.reportsPath", test.reports.junitXml.destination
+		}
+	}
+
+	jar {
+		manifest {
+			from ('META-INF/MANIFEST.MF') {
+				eachEntry { e -> if (e.key == 'Bundle-Version') {
+						e.value = e.value.replace('qualifier', startTime.format("yyyyMMddHHmm"))
+					}}
+			}
+		}
+		archiveName = "${manifest.effectiveManifest.attributes['Bundle-SymbolicName']}_${manifest.effectiveManifest.attributes['Bundle-Version']}.${extension}"
+	}
+
+	version = jar.manifest.effectiveManifest.attributes['Bundle-Version']
+	repositories { mavenCentral() }
+}
+
+project(':jamon') {
+	dependencies {
+	        compile 'org.slf4j:slf4j-api:1.7.6'
+		testCompile 'junit:junit:4.11'
+	}
+}
+

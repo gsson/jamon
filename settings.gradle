@@ -1,0 +1,2 @@
+rootProject.buildFileName = 'jamon.gradle'
+include 'jamon'
