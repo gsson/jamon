@@ -17,7 +17,10 @@ public class Path implements Iterable<Node> {
 			return true;
 		if (!(obj instanceof Path))
 			return false;
-		final Path other = (Path) obj;
+		return elementsEquals((Path) obj);
+	}
+
+	private boolean elementsEquals(Path other) {
 		if (path.length != other.path.length)
 			return false;
 		for (int i = 0; i < path.length; i++)
