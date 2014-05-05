@@ -97,10 +97,17 @@ public class Node {
 
 	@Override
 	public boolean equals(Object obj) {
-		return shallowEquals(obj) && Objects.equals(children, ((Node) obj).children);
+		if (this == obj)
+			return true;
+		if (!(obj instanceof Node))
+			return false;
+		final Node other = (Node) obj;
+		return (start == other.start) && (end == other.end) && Objects.equals(value, other.value) && Objects.equals(attachment, other.attachment) && Objects.equals(children, other.children);
 	}
 
 	public boolean shallowEquals(Object obj) {
+		if (this == obj)
+			return true;
 		if (!(obj instanceof Node))
 			return false;
 		final Node other = (Node) obj;
