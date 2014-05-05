@@ -30,7 +30,7 @@ public class NodeContextImpl implements NodeContext {
 
 		@Override
 		public final String toString() {
-			return String.format("{ %d, %s }", path, Objects.toString(matcher));
+			return String.format("{ %s, %s }", path, Objects.toString(matcher));
 		}
 
 		@Override
@@ -56,7 +56,7 @@ public class NodeContextImpl implements NodeContext {
 		this.matchCache = matchCache;
 		this.path = path;
     }
-	
+
 	@Override
     public NodeContext forChild(Node n) {
 	    return new NodeContextImpl(path.forChild(n), matchCache);
