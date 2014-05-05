@@ -399,14 +399,9 @@ public class NodeMatchers {
         }
 	}
 
-	public static void traverseBreadthFirst(Path path, PathVisitor visitor) {
-		if (!visitor.visit(path))
-			return;
-
-		PathStack stack = new PathStack();
-		stack.append(path, path.leaf().children());
-		while (!stack.isEmpty()) {
-			path = stack.poll();
+	public static void traverseBreadthFirst(Path start, PathVisitor visitor) {
+		final PathStack stack = new PathStack();
+		for (Path path = start; path != null; path = stack.poll()) {
 			if (!visitor.visit(path))
 				return;
 
@@ -414,14 +409,9 @@ public class NodeMatchers {
 		}
 	}
 
-	public static void traverseDepthFirst(Path path, PathVisitor visitor) {
-		if (!visitor.visit(path))
-			return;
-
-		PathStack stack = new PathStack();
-		stack.prepend(path, path.leaf().children());
-		while (!stack.isEmpty()) {
-			path = stack.poll();
+	public static void traverseDepthFirst(Path start, PathVisitor visitor) {
+		final PathStack stack = new PathStack();
+		for (Path path = start; path != null; path = stack.poll()) {
 			if (!visitor.visit(path))
 				return;
 
