@@ -44,8 +44,8 @@ public class Nodes {
 			Node node = buildCache.get(this);
 			if (node != null)
 				return node;
-			List<Node> children = buildChildren();
-			node = new Node(value, attachmentFactory.create(value, children)).addChildren(children);
+			List<Node> childrenList = buildChildren();
+			node = new Node(value, attachmentFactory.create(value, childrenList)).addChildren(childrenList);
 			Node oldNode = buildCache.put(this, node);
 			if (oldNode != null && oldNode != node)
 				throw new IllegalStateException("Inconsistent node creation");
