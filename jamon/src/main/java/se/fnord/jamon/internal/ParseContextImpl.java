@@ -60,7 +60,7 @@ public class ParseContextImpl implements ParseContext {
 	}
 
 	ParseContextImpl(int start, char[] chars, Map<CacheKey, Node> nodeCache) {
-		this(start, chars.length, chars, new HashMap<CacheKey, Node>());
+		this(start, chars.length, chars, nodeCache);
 	}
 
 	ParseContextImpl(int start, int end, char[] chars, Map<CacheKey, Node> nodeCache) {
