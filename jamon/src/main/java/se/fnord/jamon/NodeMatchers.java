@@ -11,6 +11,10 @@ import se.fnord.jamon.internal.PathStack;
  * Utility to verify parse trees
  */
 public class NodeMatchers {
+	private NodeMatchers() {
+		throw new IllegalAccessError("No NodeMatchers for you!");
+	}
+
 	private static final class Equality<T> implements Predicate<T> {
 		private final T reference;
 

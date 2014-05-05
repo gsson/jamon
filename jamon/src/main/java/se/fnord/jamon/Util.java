@@ -1,6 +1,10 @@
 package se.fnord.jamon;
 
 public class Util {
+	private Util() {
+		throw new IllegalAccessError("No Util for you!");
+	}
+
 	/**
 	 * Verify a parse tree
 	 */

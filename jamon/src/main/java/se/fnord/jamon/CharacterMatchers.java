@@ -5,6 +5,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class CharacterMatchers {
+	private CharacterMatchers() {
+		throw new IllegalAccessError("No CharacterMatchers for you!");
+	}
 
 	public static CharacterMatcher not(final CharacterMatcher matcher) {
 		return new CharacterMatcher() {
