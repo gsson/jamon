@@ -73,9 +73,9 @@ public class Path implements Iterable<Node> {
 	}
 
     public static Path path(Node ...nodes) {
-    	nodes = nodes.clone();
-    	checkPath(nodes);
-    	return new Path(nodes);
+    	final Node[] newNodes = nodes.clone();
+    	checkPath(newNodes);
+    	return new Path(newNodes);
     }
 
     @Override
