@@ -1,6 +1,7 @@
 */build
 *.pyc
 *.class
+.gradle/
 .settings/
 .metadata/
 leases.tch
