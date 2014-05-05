@@ -197,6 +197,7 @@ public final class Parsers {
 					return remaining;
 				}
 				catch (ParseException e) {
+					// Failures here are ok
 				}
 			}
 			throw new ParseException("No matching alternative");
@@ -325,6 +326,7 @@ public final class Parsers {
 				me.attachment(createAttachment(me.value(), me.children()));
 			}
 			catch (ParseException e) {
+				// Failures here are ok
 			}
 			if (i < min)
 				throw new ParseException("Out of bounds");
