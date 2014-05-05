@@ -1,20 +1,20 @@
 package se.fnord.jamon;
 
+import static se.fnord.jamon.CharacterMatchers.and;
 import static se.fnord.jamon.CharacterMatchers.control;
 import static se.fnord.jamon.CharacterMatchers.digit;
 import static se.fnord.jamon.CharacterMatchers.match;
 import static se.fnord.jamon.CharacterMatchers.newline;
 import static se.fnord.jamon.CharacterMatchers.not;
 import static se.fnord.jamon.CharacterMatchers.or;
-import static se.fnord.jamon.CharacterMatchers.and;
 import static se.fnord.jamon.CharacterMatchers.white;
 import static se.fnord.jamon.Parsers.alternative;
 import static se.fnord.jamon.Parsers.between;
-import static se.fnord.jamon.Parsers.lbetween;
 import static se.fnord.jamon.Parsers.delimitedSequence;
 import static se.fnord.jamon.Parsers.exact;
 import static se.fnord.jamon.Parsers.join;
 import static se.fnord.jamon.Parsers.lalternative;
+import static se.fnord.jamon.Parsers.lbetween;
 import static se.fnord.jamon.Parsers.matches;
 import static se.fnord.jamon.Parsers.oneOf;
 import static se.fnord.jamon.Parsers.optional;

@@ -19,14 +19,11 @@ import static se.fnord.jamon.Parsers.lrepeat;
 import static se.fnord.jamon.Parsers.lsequence;
 import static se.fnord.jamon.Parsers.matches;
 import static se.fnord.jamon.Parsers.peek;
-import static se.fnord.jamon.Parsers.preserve;
 import static se.fnord.jamon.Parsers.reference;
 import static se.fnord.jamon.Parsers.repeat;
 import static se.fnord.jamon.Parsers.sequence;
 import static se.fnord.jamon.Parsers.skip;
 import static se.fnord.jamon.Parsers.strip;
-
-import org.junit.Test;
 
 public class TestMiniExpParser {
 	public static Parser fieldRef(final Consumer exprRef, final Parser identifier) {
@@ -77,7 +74,7 @@ public class TestMiniExpParser {
 		exprRef.setTarget(condexpr);
 		return strip(condexpr);
 	}
-	
+
 	private static Parser sskip(final String token) {
 		return strip(skip(token));
 	}
