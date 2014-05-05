@@ -1,0 +1,15 @@
+env:
+  global:
+    - TERM=dumb
+
+language: java
+
+script: gradle -Djava.awt.headless=true clean check
+
+branches:
+  only:
+    - master
+
+cache:
+  directories:
+  - $HOME/.gradle
