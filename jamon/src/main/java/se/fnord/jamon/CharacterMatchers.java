@@ -2,6 +2,7 @@ package se.fnord.jamon;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Set;
 
 public class CharacterMatchers {
 
@@ -188,7 +189,7 @@ public class CharacterMatchers {
 	}
 
 	public static CharacterMatcher match(char ...chars) {
-		final HashSet<Character> characters = new HashSet<Character>(chars.length);
+		final Set<Character> characters = new HashSet<Character>(chars.length);
 		for (char ch : chars)
 			characters.add(ch);
 		return new CharacterMatcher() {
