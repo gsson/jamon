@@ -20,16 +20,16 @@ public class NodeContextImpl implements NodeContext {
 			this.hashCode = path.hashCode() * 31 + matcher.hashCode();
 		}
 
-		public final Path path() {
+		public Path path() {
 			return path;
 		}
 
-		public final NodeMatcher matcher() {
+		public NodeMatcher matcher() {
 			return matcher;
 		}
 
 		@Override
-		public final String toString() {
+		public String toString() {
 			return String.format("{ %s, %s }", path, Objects.toString(matcher));
 		}
 

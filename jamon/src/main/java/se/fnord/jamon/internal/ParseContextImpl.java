@@ -21,16 +21,16 @@ public class ParseContextImpl implements ParseContext {
 			this.group = group;
 		}
 
-		public final int start() {
+		public int start() {
 			return start;
 		}
 
-		public final Consumer group() {
+		public Consumer group() {
 			return group;
 		}
 
 		@Override
-		public final String toString() {
+		public String toString() {
 			return String.format("{ %d, %s }", start, Objects.toString(group));
 		}
 
@@ -141,5 +141,5 @@ public class ParseContextImpl implements ParseContext {
 	public String toString() {
 	    return new String(chars, start, Math.min(chars.length - start, 16));
 	}
-	
+
 }
