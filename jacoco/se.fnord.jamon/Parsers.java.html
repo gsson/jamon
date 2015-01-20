@@ -1,0 +1,983 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Parsers.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jamon</a> &gt; <a href="index.source.html" class="el_package">se.fnord.jamon</a> &gt; <span class="el_source">Parsers.java</span></div><h1>Parsers.java</h1><pre class="source lang-java linenums">package se.fnord.jamon;
+
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+
+import se.fnord.jamon.internal.Contexts;
+
+public final class Parsers {
+	public static final class SubParser implements Consumer {
+		private final Consumer scanner;
+		private final Consumer parser;
+<span class="nc" id="L14">		public SubParser(Consumer scanner, Consumer parser) {</span>
+<span class="nc" id="L15">			this.scanner = scanner;</span>
+<span class="nc" id="L16">			this.parser = parser;</span>
+<span class="nc" id="L17">		}</span>
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+<span class="nc" id="L21">			ParseContext limit = scanner.consume(input, new Node());</span>
+<span class="nc" id="L22">			limit = input.splice(input.start(), limit.start());</span>
+<span class="nc" id="L23">			limit = parser.consume(limit, parent);</span>
+<span class="nc" id="L24">			return input.splice(limit.start(), input.end());</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L29">			return String.format(&quot;subparser[scanner=%s, parser=%s]&quot;, scanner, parser);</span>
+		}
+	}
+
+	public static final class Group implements Consumer {
+		private final String name;
+		private final Consumer parser;
+<span class="nc" id="L36">		public Group(String name, Consumer parser) {</span>
+<span class="nc" id="L37">			this.name = name;</span>
+<span class="nc" id="L38">			this.parser = parser;</span>
+<span class="nc" id="L39">		}</span>
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+			try {
+<span class="nc" id="L44">				return parser.consume(input, parent);</span>
+			}
+<span class="nc" id="L46">			catch (ParseException e) {</span>
+<span class="nc" id="L47">				throw new ParseException(&quot;Group &quot; + name, e);</span>
+			}
+<span class="nc" id="L49">			catch (FatalParseException e) {</span>
+<span class="nc" id="L50">				throw new FatalParseException(&quot;Group &quot; + name, e);</span>
+			}
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L56">			return String.format(&quot;group[name=\&quot;%s\&quot;, parser=%s]&quot;, name, parser);</span>
+		}
+	}
+
+	static final class StaticAttachmentFactory implements AttachmentFactory {
+		private final Object o;
+
+<span class="fc" id="L63">		public StaticAttachmentFactory(Object o) {</span>
+<span class="fc" id="L64">			this.o = o;</span>
+<span class="fc" id="L65">		}</span>
+
+		@Override
+		public Object create(String value, List&lt;Node&gt; children) {
+<span class="fc" id="L69">			return o;</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L74">			return Objects.toString(o);</span>
+		}
+	}
+
+<span class="fc" id="L78">	private static abstract class AbstractConsumer implements Consumer {</span>
+		void doApply(Node parent, Node me) {
+<span class="nc" id="L80">			throw new UnsupportedOperationException();</span>
+		}
+
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+<span class="nc" id="L84">			throw new UnsupportedOperationException();</span>
+		}
+
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+			Node me;
+<span class="fc" id="L89">			me = input.consumerMatched(this);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">			if (me != null) {</span>
+<span class="fc" id="L91">				doApply(parent, me);</span>
+<span class="fc" id="L92">				return input.splice(me.end());</span>
+			}
+
+			try {
+<span class="fc" id="L96">				me = new Node(null);</span>
+<span class="fc" id="L97">				final ParseContext remaining = doConsume(input, me);</span>
+<span class="fc" id="L98">				me.start(input.start());</span>
+<span class="fc" id="L99">				me.end(remaining.start());</span>
+<span class="fc" id="L100">				input.consumerMatches(this, me);</span>
+<span class="fc" id="L101">				doApply(parent, me);</span>
+<span class="fc" id="L102">				return remaining;</span>
+			}
+<span class="fc" id="L104">			catch (ParseException e) {</span>
+<span class="fc" id="L105">				input.consumerMismatches(this);</span>
+<span class="fc" id="L106">				throw e;</span>
+			}
+		}
+	}
+
+	private static abstract class AbstractParser extends AbstractConsumer implements Parser {
+<span class="fc" id="L112">		private static final AttachmentFactory NULL_FACTORY = new StaticAttachmentFactory(null);</span>
+		protected final AttachmentFactory attachmentFactory;
+
+<span class="fc" id="L115">		public AbstractParser(AttachmentFactory attachmentFactory) {</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">			this.attachmentFactory = attachmentFactory == null ? NULL_FACTORY : attachmentFactory;</span>
+<span class="fc" id="L117">		}</span>
+
+		public AbstractParser() {
+<span class="fc" id="L120">			this(null);</span>
+<span class="fc" id="L121">		}</span>
+
+		protected Object createAttachment(String value, List&lt;Node&gt; children) {
+<span class="fc" id="L124">			return attachmentFactory.create(value, children);</span>
+		}
+
+		protected Object createAttachment(String value) {
+<span class="fc" id="L128">			return attachmentFactory.create(value, Collections.&lt;Node&gt; emptyList());</span>
+		}
+
+		@Override
+		public final Parser attach(Object o) {
+<span class="fc" id="L133">			return attachmentFactory(new StaticAttachmentFactory(o));</span>
+		}
+	}
+
+<span class="fc" id="L137">	private static final class ParserReferenceImpl implements ParserReference {</span>
+<span class="fc" id="L138">		private Consumer target = null;</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L142">			return &quot;reference[]&quot;;</span>
+		}
+
+		@Override
+		public void setTarget(Consumer parser) {
+<span class="fc" id="L147">			this.target = parser;</span>
+<span class="fc" id="L148">		}</span>
+
+		@Override
+		public Parser attach(Object o) {
+<span class="nc" id="L152">			throw new IllegalStateException(&quot;Can not add attachments to references&quot;);</span>
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory f) {
+<span class="nc" id="L157">			throw new IllegalStateException(&quot;Can not add attachments to references&quot;);</span>
+		}
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+<span class="fc" id="L162">			return target.consume(input, parent);</span>
+		}
+	}
+
+	private static final class AlternativeParser extends AbstractParser {
+		private final Consumer[] parsers;
+
+		private AlternativeParser(AttachmentFactory attachmentFactory, Consumer[] parsers) {
+<span class="fc" id="L170">			super(attachmentFactory);</span>
+<span class="fc" id="L171">			this.parsers = parsers.clone();</span>
+<span class="fc" id="L172">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L176">			final StringBuilder sb = new StringBuilder(&quot;alternative[&quot;);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">			if (attachmentFactory != null)</span>
+<span class="nc" id="L178">				sb.append(attachmentFactory).append(&quot;, &quot;);</span>
+<span class="nc" id="L179">			sb.append(&quot;{&quot;).append(parsers[0]);</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">			for (int i = 1; i &lt; parsers.length; i++)</span>
+<span class="nc" id="L181">				sb.append(&quot;, &quot;).append(parsers[i]);</span>
+<span class="nc" id="L182">			sb.append(&quot;}]&quot;);</span>
+<span class="nc" id="L183">			return sb.toString();</span>
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory f) {
+<span class="nc" id="L188">			return new AlternativeParser(f, parsers);</span>
+		}
+
+		@Override
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+<span class="fc bfc" id="L193" title="All 2 branches covered.">			for (Consumer parser : parsers) {</span>
+				try {
+<span class="fc" id="L195">					final ParseContext remaining = parser.consume(input, me);</span>
+<span class="fc" id="L196">					me.attachment(createAttachment(me.value(), me.children()));</span>
+<span class="fc" id="L197">					return remaining;</span>
+				}
+<span class="fc" id="L199">				catch (ParseException e) {</span>
+					// Failures here are ok
+				}
+			}
+<span class="fc" id="L203">			throw new ParseException(&quot;No matching alternative&quot;);</span>
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+<span class="fc" id="L208">			parent.addChildren(me);</span>
+<span class="fc" id="L209">		}</span>
+	}
+
+	// TODO: Make me a Transformer
+	private static final class JoinTransform extends AbstractParser {
+		private final Consumer parser;
+		private final String joint;
+
+		private JoinTransform(Consumer parser, String joint, AttachmentFactory attachmentFactory) {
+<span class="fc" id="L218">			super(attachmentFactory);</span>
+<span class="fc" id="L219">			this.parser = parser;</span>
+<span class="fc" id="L220">			this.joint = joint;</span>
+<span class="fc" id="L221">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L225">			final StringBuilder sb = new StringBuilder(&quot;compress[&quot;);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">			if (attachmentFactory != null)</span>
+<span class="nc" id="L227">				sb.append(attachmentFactory).append(&quot;, &quot;);</span>
+<span class="nc" id="L228">			sb.append(parser);</span>
+<span class="nc" id="L229">			sb.append(&quot;]&quot;);</span>
+<span class="nc" id="L230">			return sb.toString();</span>
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory f) {
+<span class="fc" id="L235">			return new JoinTransform(parser, joint, f);</span>
+		}
+
+		@Override
+		ParseContext doConsume(ParseContext input, Node me)
+				throws ParseException, FatalParseException {
+<span class="fc" id="L241">			return parser.consume(input, me);</span>
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+<span class="fc" id="L246">			parent.addChildren(new Node(me.start(), me.end(), join(joint, me), createAttachment(me.value(), me.children())));</span>
+<span class="fc" id="L247">		}</span>
+	}
+
+	private static final class SequenceParser extends AbstractParser {
+		private final Consumer[] parsers;
+
+		private SequenceParser(AttachmentFactory attachmentFactory, Consumer[] parsers) {
+<span class="fc" id="L254">			super(attachmentFactory);</span>
+<span class="fc" id="L255">			this.parsers = parsers.clone();</span>
+<span class="fc" id="L256">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L260">			final StringBuilder sb = new StringBuilder(&quot;sequence[&quot;);</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">			if (attachmentFactory != null)</span>
+<span class="nc" id="L262">				sb.append(attachmentFactory).append(&quot;, &quot;);</span>
+<span class="nc" id="L263">			sb.append(&quot;{&quot;).append(parsers[0]);</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">			for (int i = 1; i &lt; parsers.length; i++)</span>
+<span class="nc" id="L265">				sb.append(&quot;, &quot;).append(parsers[i]);</span>
+<span class="nc" id="L266">			sb.append(&quot;}&quot;);</span>
+<span class="nc" id="L267">			return sb.toString();</span>
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory f) {
+<span class="fc" id="L272">			return new SequenceParser(f, parsers);</span>
+		}
+
+		@Override
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+			try {
+<span class="fc bfc" id="L278" title="All 2 branches covered.">				for (Consumer parser : parsers)</span>
+<span class="fc" id="L279">					input = parser.consume(input, me);</span>
+<span class="fc" id="L280">				me.attachment(createAttachment(me.value(), me.children()));</span>
+			}
+<span class="fc" id="L282">			catch (ParseException e) {</span>
+<span class="fc" id="L283">				throw new ParseException(&quot;Sequence failed&quot;, e);</span>
+<span class="fc" id="L284">			}</span>
+<span class="fc" id="L285">			return input;</span>
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+<span class="fc" id="L290">			parent.addChildren(me);</span>
+<span class="fc" id="L291">		}</span>
+	}
+
+	private static final class RepeatParser extends AbstractParser {
+		private final Consumer parser;
+		private final int min;
+		private final int max;
+
+		private RepeatParser(Consumer parser, AttachmentFactory attachmentFactory, int min, int max) {
+<span class="fc" id="L300">			super(attachmentFactory);</span>
+<span class="fc" id="L301">			this.parser = parser;</span>
+<span class="fc" id="L302">			this.min = min;</span>
+<span class="fc" id="L303">			this.max = max;</span>
+<span class="fc" id="L304">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc bnc" id="L308" title="All 2 branches missed.">			if (attachmentFactory != null)</span>
+<span class="nc" id="L309">				return &quot;repeat[&quot; + attachmentFactory + &quot;, &quot; + min + &quot;, &quot; + max + &quot;, &quot; + parser + &quot;]&quot;;</span>
+<span class="nc" id="L310">			return &quot;repeat[&quot; + min + &quot;, &quot; + max + &quot;, &quot; + parser + &quot;]&quot;;</span>
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory f) {
+<span class="nc" id="L315">			return new RepeatParser(parser, f, min, max);</span>
+		}
+
+		@Override
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+<span class="fc" id="L320">			int i = 0;</span>
+			try {
+<span class="fc bfc" id="L322" title="All 4 branches covered.">				while (max == -1 || i &lt; max) {</span>
+<span class="fc" id="L323">					input = parser.consume(input, me);</span>
+<span class="fc" id="L324">					i++;</span>
+				}
+<span class="fc" id="L326">				me.attachment(createAttachment(me.value(), me.children()));</span>
+			}
+<span class="fc" id="L328">			catch (ParseException e) {</span>
+				// Failures here are ok
+<span class="fc" id="L330">			}</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">			if (i &lt; min)</span>
+<span class="fc" id="L332">				throw new ParseException(&quot;Out of bounds&quot;);</span>
+<span class="fc" id="L333">			return input;</span>
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+<span class="fc" id="L338">			parent.addChildren(me);</span>
+<span class="fc" id="L339">		}</span>
+	}
+
+	private static final class LiftTransform extends AbstractParser {
+		private final Consumer parser;
+
+<span class="fc" id="L345">		private LiftTransform(Consumer parser) {</span>
+<span class="fc" id="L346">			this.parser = parser;</span>
+<span class="fc" id="L347">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L351">			return &quot;lift[&quot; + parser + &quot;]&quot;;</span>
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory o) {
+<span class="fc" id="L356">			return new LiftAndReplaceAttachmentTransform(o, parser);</span>
+		}
+
+		@Override
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+<span class="fc" id="L361">		    return parser.consume(input, me);</span>
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+<span class="fc bfc" id="L366" title="All 2 branches covered.">			for (Node m : me.children())</span>
+<span class="fc" id="L367">				parent.addChildren(m.children());</span>
+<span class="fc" id="L368">		}</span>
+	}
+
+	private static final class LiftAndReplaceAttachmentTransform extends AbstractParser {
+		private final Consumer parser;
+
+		private LiftAndReplaceAttachmentTransform(AttachmentFactory attachmentFactory, Consumer parser) {
+<span class="fc" id="L375">			super(attachmentFactory);</span>
+<span class="fc" id="L376">			this.parser = parser;</span>
+<span class="fc" id="L377">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L381">			return &quot;lift[&quot; + parser + &quot;]&quot;;</span>
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory o) {
+<span class="nc" id="L386">			return new LiftAndReplaceAttachmentTransform(o, parser);</span>
+		}
+
+		@Override
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+<span class="fc" id="L391">		    return parser.consume(input, me);</span>
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+<span class="fc bfc" id="L396" title="All 2 branches covered.">			for (Node m : me.children()) {</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">				for (Node mm : m.children()) {</span>
+<span class="fc" id="L398">					parent.addChildren(new Node(mm.start(), mm.end(), mm.value(), createAttachment(mm.value(), mm.children())));</span>
+<span class="fc" id="L399">				}</span>
+<span class="fc" id="L400">			}</span>
+<span class="fc" id="L401">		}</span>
+	}
+
+	private static final class RequireTransform implements Consumer {
+		private final Consumer consumer;
+
+<span class="nc" id="L407">		public RequireTransform(Consumer consumer) {</span>
+<span class="nc" id="L408">			this.consumer = consumer;</span>
+<span class="nc" id="L409">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L413">			return &quot;require[&quot; + consumer + &quot;]&quot;;</span>
+		}
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+			try {
+<span class="nc" id="L419">				return consumer.consume(input, parent);</span>
+			}
+<span class="nc" id="L421">			catch (ParseException e) {</span>
+<span class="nc" id="L422">				throw new FatalParseException(e);</span>
+			}
+		}
+	}
+
+	private static final class EndOfInputTransform implements Transformer {
+<span class="nc" id="L428">		private EndOfInputTransform() {</span>
+<span class="nc" id="L429">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L433">			return &quot;endOfInput&quot;;</span>
+		}
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+<span class="nc bnc" id="L438" title="All 2 branches missed.">			if (input.length() &gt; 0)</span>
+<span class="nc" id="L439">				throw new ParseException(&quot;End of input expected&quot;);</span>
+<span class="nc" id="L440">			return input;</span>
+		}
+	}
+
+	private static final class IgnoreTransform implements Transformer {
+		private final Consumer parser;
+
+<span class="fc" id="L447">		private IgnoreTransform(Consumer parser) {</span>
+<span class="fc" id="L448">			this.parser = parser;</span>
+<span class="fc" id="L449">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L453">			return &quot;ignore[&quot; + parser + &quot;]&quot;;</span>
+		}
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+<span class="fc" id="L458">			return parser.consume(input, new Node(null));</span>
+		}
+	}
+
+	private static final class InputPreservingParser extends AbstractParser {
+		private final Consumer parser;
+
+		private InputPreservingParser(AttachmentFactory attachment, Consumer parser) {
+<span class="nc" id="L466">			super(attachment);</span>
+<span class="nc" id="L467">			this.parser = parser;</span>
+<span class="nc" id="L468">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L472">			return &quot;preserve[&quot; + parser + &quot;]&quot;;</span>
+		}
+
+		@Override
+		ParseContext doConsume(ParseContext input, Node me) throws ParseException, FatalParseException {
+<span class="nc" id="L477">			parser.consume(input, me);</span>
+<span class="nc" id="L478">			me.attachment(createAttachment(me.value(), me.children()));</span>
+<span class="nc" id="L479">		    return input;</span>
+		}
+
+		@Override
+		void doApply(Node parent, Node me) {
+<span class="nc" id="L484">			parent.addChildren(me);</span>
+<span class="nc" id="L485">		}</span>
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory f) {
+<span class="nc" id="L489">			return new InputPreservingParser(f, parser);</span>
+		}
+	}
+
+	private static final class ExactParser extends AbstractParser {
+		private final String token;
+
+		private ExactParser(AttachmentFactory attachment, String token) {
+<span class="fc" id="L497">			super(attachment);</span>
+<span class="fc" id="L498">			this.token = token;</span>
+<span class="fc" id="L499">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L503">			return &quot;exact[\&quot;&quot; + token + &quot;\&quot;]&quot;;</span>
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory f) {
+<span class="fc" id="L508">			return new ExactParser(f, token);</span>
+		}
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+			int i;
+<span class="fc bfc" id="L514" title="All 2 branches covered.">			if (input.length() &lt; token.length())</span>
+<span class="fc" id="L515">				throw new ParseException(String.format(&quot;Token mismatch (%s)&quot;, token));</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">			for (i = 0; i &lt; token.length(); i++) {</span>
+<span class="fc bfc" id="L517" title="All 2 branches covered.">				if (token.charAt(i) != input.charAt(i))</span>
+<span class="fc" id="L518">					throw new ParseException(String.format(&quot;Token mismatch (%s)&quot;, token));</span>
+			}
+
+<span class="fc" id="L521">			final Node me = input.node(i, token, createAttachment(token));</span>
+<span class="fc" id="L522">			parent.addChildren(me);</span>
+<span class="fc" id="L523">			return input.splice(input.start() + i);</span>
+		}
+	}
+
+	private static final class MatchParser extends AbstractParser {
+		private final int min;
+		private final int max;
+		private final CharacterMatcher matcher;
+
+		private MatchParser(AttachmentFactory attachment, int min, int max, CharacterMatcher matcher) {
+<span class="fc" id="L533">			super(attachment);</span>
+<span class="fc" id="L534">			this.min = min;</span>
+<span class="fc" id="L535">			this.max = max;</span>
+<span class="fc" id="L536">			this.matcher = matcher;</span>
+<span class="fc" id="L537">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L541">			return &quot;matches[&quot; + min + &quot;, &quot; + max + &quot;, &quot; + matcher + &quot;]&quot;;</span>
+		}
+
+		@Override
+		public Parser attachmentFactory(AttachmentFactory o) {
+<span class="fc" id="L546">			return new MatchParser(o, min, max, matcher);</span>
+		}
+
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException {
+			int i;
+			int m;
+<span class="fc bfc" id="L552" title="All 2 branches covered.">			if (max != -1)</span>
+<span class="fc" id="L553">				m = Math.min(input.length(), max);</span>
+			else
+<span class="fc" id="L555">				m = input.length();</span>
+
+<span class="fc bfc" id="L557" title="All 2 branches covered.">			for (i = 0; i &lt; m; i++) {</span>
+<span class="fc bfc" id="L558" title="All 2 branches covered.">				if (!matcher.match(input.charAt(i))) {</span>
+<span class="fc" id="L559">					break;</span>
+				}
+			}
+
+<span class="fc bfc" id="L563" title="All 2 branches covered.">			if (i &lt; min)</span>
+<span class="fc" id="L564">				throw new ParseException(String.format(&quot;Match count out of bounds (%d &gt;= %d)&quot;, i, min));</span>
+
+<span class="fc" id="L566">			final Node me = input.node(i, null);</span>
+<span class="fc" id="L567">			me.attachment(createAttachment(me.value(), me.children()));</span>
+<span class="fc" id="L568">			parent.addChildren(me);</span>
+<span class="fc" id="L569">			return input.splice(input.start() + i);</span>
+		}
+	}
+
+	private static final class StaticTranslator implements Translator {
+		private final String replacement;
+
+<span class="fc" id="L576">		public StaticTranslator(final String replacement) {</span>
+<span class="fc" id="L577">			this.replacement = replacement;</span>
+<span class="fc" id="L578">		}</span>
+
+		@Override
+		public String translate(final String input) {
+<span class="nc" id="L582">			return replacement;</span>
+		}
+	}
+
+	private static final class ReplaceTransform implements Transformer {
+		private final Translator translator;
+		private final Consumer parser;
+
+<span class="fc" id="L590">		private ReplaceTransform(Translator translator, Consumer parser) {</span>
+<span class="fc" id="L591">			this.translator = translator;</span>
+<span class="fc" id="L592">			this.parser = parser;</span>
+<span class="fc" id="L593">		}</span>
+
+		@Override
+		public ParseContext consume(ParseContext input, Node parent) throws ParseException, FatalParseException {
+<span class="nc" id="L597">			final Node x = new Node(null);</span>
+<span class="nc" id="L598">			final ParseContext remaining = parser.consume(input, x);</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">			if (x.children().size() != 1)</span>
+<span class="nc" id="L600">				throw new IllegalStateException();</span>
+<span class="nc" id="L601">			final Node valueNode = x.children().get(0);</span>
+<span class="nc" id="L602">			final String value = translator.translate(valueNode.value());</span>
+<span class="nc" id="L603">			final Node me = input.node(remaining.start() - input.start(), value, valueNode.attachment());</span>
+<span class="nc" id="L604">			me.addChildren(valueNode.children());</span>
+<span class="nc" id="L605">			parent.addChildren(me);</span>
+<span class="nc" id="L606">			return remaining;</span>
+		}
+	}
+
+<span class="nc" id="L610">	private Parsers() {</span>
+<span class="nc" id="L611">	}</span>
+
+	private static String join(final String joint, final Node node) {
+<span class="fc" id="L614">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L615">		join(&quot;&quot;, joint, node, sb);</span>
+<span class="fc" id="L616">		return sb.toString();</span>
+	}
+
+	private static void join(final String prefix, final String joint, final Node node, StringBuilder sb) {
+<span class="fc" id="L620">		Iterator&lt;Node&gt; i = node.children().iterator();</span>
+<span class="fc bfc" id="L621" title="All 2 branches covered.">		if (!i.hasNext())</span>
+<span class="fc" id="L622">			return;</span>
+<span class="fc" id="L623">		Node n = i.next();</span>
+<span class="fc" id="L624">		sb.append(prefix);</span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">		if (n.value() != null) {</span>
+<span class="fc" id="L626">			sb.append(n.value());</span>
+<span class="fc" id="L627">			join(joint, joint, n, sb);</span>
+		}
+		else {
+<span class="fc" id="L630">			join(&quot;&quot;, joint, n, sb);</span>
+		}
+<span class="fc bfc" id="L632" title="All 2 branches covered.">		while (i.hasNext()) {</span>
+<span class="fc" id="L633">			n = i.next();</span>
+<span class="fc" id="L634">			sb.append(joint);</span>
+<span class="pc bpc" id="L635" title="1 of 2 branches missed.">			if (n.value() != null) {</span>
+<span class="nc" id="L636">				sb.append(n.value());</span>
+<span class="nc" id="L637">				join(joint, joint, n, sb);</span>
+			}
+			else {
+<span class="fc" id="L640">				join(&quot;&quot;, joint, n, sb);</span>
+			}
+		}
+<span class="fc" id="L643">	}</span>
+
+	/**
+	 * Returns a parser that creates a node according to the parser
+	 * parameter. Converts all ParseExceptions into
+	 * FatalParseExceptions.
+	 * &lt;p&gt;
+	 * @param parser The parser that will create the node
+	 *
+	 * @return The composite parser
+	 */
+	public static Consumer require(final Parser parser) {
+<span class="nc" id="L655">		return new RequireTransform(parser);</span>
+	}
+
+	/**
+	 * Returns a parser that creates a node according to the parser
+	 * parameter except that all characters accepted by the strip matcher
+	 * is removed before and after the parsed section.
+	 * &lt;p&gt;
+	 * Equivalent to:
+	 * &lt;p&gt;
+	 * &lt;code&gt;lsequence(ignore(strip), parser, ignore(strip))&lt;/code&gt;
+	 * &lt;p&gt;
+	 * Example:
+	 * &lt;p&gt;
+	 * &lt;code&gt;strip(matches(Matchers.digit()), Matchers.white())&lt;/code&gt;
+	 * &lt;p&gt;
+	 * @param parser The parser that will create the node
+	 * @param strip The matcher that indicates characters to strip.
+	 *
+	 * @return The composite parser
+	 */
+	public static Parser strip(final Consumer parser, final CharacterMatcher strip) {
+<span class="fc" id="L677">		return lsequence(ignore(strip), parser, ignore(strip));</span>
+	}
+
+	/**
+	 * Returns a parser that creates a node according to the parser
+	 * parameter except that all (non-line-delimiting) whitespace before
+	 * and after the parsed section is removed.
+	 * &lt;p&gt;
+	 * Equivalent to:
+	 * &lt;p&gt;
+	 * &lt;code&gt;strip(parser, Matchers.white())&lt;/code&gt;
+	 * &lt;p&gt;
+	 * @param parser The parser that will create the node
+	 *
+	 * @return The composite parser
+	 */
+	public static Parser strip(final Consumer parser) {
+<span class="fc" id="L694">		return strip(parser, CharacterMatchers.white());</span>
+	}
+
+	/**
+	 * Returns a parser that creates a node with all characters accepted by the matcher.
+	 * &lt;p&gt;
+	 * Successful matching requires at least one matching character.
+	 * &lt;p&gt;
+	 * Equivalent to:
+	 * &lt;p&gt;
+	 * &lt;code&gt;matches(1, -1, matcher)&lt;/code&gt;
+	 * &lt;p&gt;
+	 * @param matcher The matcher to collect characters
+	 *
+	 * @return The parser
+	 */
+	public static Parser matches(final CharacterMatcher matcher) {
+<span class="fc" id="L711">		return matches(1, -1, matcher);</span>
+	}
+
+	/**
+	 * Returns a parser that creates a node with all characters accepted by the matcher.
+	 * &lt;p&gt;
+	 * Successful matching requires at least min matching character(s).
+	 * &lt;p&gt;
+	 * Equivalent to:
+	 * &lt;p&gt;
+	 * &lt;code&gt;matches(min, -1, matcher)&lt;/code&gt;
+	 * &lt;p&gt;
+	 * @param min The minimum number of matching characters for this parser to return successfully.
+	 * @param matcher The matcher to collect characters
+	 *
+	 * @return The parser
+	 */
+	public static Parser matches(final int min, final CharacterMatcher matcher) {
+<span class="nc" id="L729">		return matches(min, -1, matcher);</span>
+	}
+
+	/**
+	 * Returns a parser that creates a node with all characters accepted by the matcher.
+	 * &lt;p&gt;
+	 * Successful matching requires at least min matching character(s).
+	 * &lt;p&gt;
+	 * @param min The minimum number of matching characters for this parser to return successfully.
+	 * @param max The maximum number of matching characters for this parser to return successfully.
+	 * @param matcher The matcher to collect characters
+	 *
+	 * @return The parser
+	 */
+	public static Parser matches(final int min, final int max, final CharacterMatcher matcher) {
+<span class="fc" id="L744">		return new MatchParser(null, min, max, matcher);</span>
+	}
+
+	/**
+	 * Returns a parser that creates a node with all characters accepted by the matcher.
+	 * &lt;p&gt;
+	 * Successful matching requires at least min matching character(s) but will never
+	 * match more than max matching characters.
+	 * &lt;p&gt;
+	 * Equivalent to:
+	 * &lt;p&gt;
+	 * &lt;code&gt;matches(min, max, Matchers.match(chars))&lt;/code&gt;
+	 * &lt;p&gt;
+	 * @param min The minimum number of matching characters for this parser to return successfully.
+	 * @param max The maximum number of matching characters for this parser to return successfully.
+	 * @param chars The characters to match
+	 *
+	 * @return The parser
+	 */
+	public static Parser matches(final int min, final int max, final char ... chars) {
+<span class="fc" id="L764">		return new MatchParser(null, min, max, CharacterMatchers.match(chars));</span>
+	}
+
+	/**
+	 * Returns a parser matches exactly the provided string.
+	 * &lt;p&gt;
+	 * @param token The string to match
+	 *
+	 * @return The parser
+	 */
+	public static Parser exact(final String token) {
+<span class="pc bpc" id="L775" title="1 of 2 branches missed.">		if (token.isEmpty())</span>
+<span class="nc" id="L776">			throw new IllegalArgumentException();</span>
+
+<span class="fc" id="L778">		return new ExactParser(null, token);</span>
+	}
+
+	/**
+	 * Returns a parser matches exactly one of the provided strings.
+	 * &lt;p&gt;
+	 * @param alternatives The strings to match
+	 *
+	 * @return The parser
+	 */
+	public static Parser oneOf(final String... alternatives) {
+<span class="fc" id="L789">		Parser[] parsers = new Parser[alternatives.length];</span>
+<span class="fc bfc" id="L790" title="All 2 branches covered.">		for (int i = 0; i &lt; alternatives.length; i++)</span>
+<span class="fc" id="L791">			parsers[i] = exact(alternatives[i]);</span>
+
+<span class="fc" id="L793">		return lalternative(parsers);</span>
+	}
+
+	public static Transformer ignore(final CharacterMatcher matcher) {
+<span class="fc" id="L797">		return skip(matches(0, -1, matcher));</span>
+	}
+
+	public static Transformer skip(final String token) {
+<span class="fc" id="L801">		return skip(exact(token));</span>
+	}
+
+	public static Transformer skip(final CharacterMatcher matcher) {
+<span class="nc" id="L805">		return skip(matches(matcher));</span>
+	}
+
+	public static Transformer skip(final Consumer parser) {
+<span class="fc" id="L809">		return new IgnoreTransform(parser);</span>
+	}
+
+	public static Parser lift(final Consumer parser) {
+<span class="fc" id="L813">		return new LiftTransform(parser);</span>
+	}
+
+	public static Transformer replace(final Consumer parser, final String replacement) {
+<span class="fc" id="L817">		return replace(parser, new StaticTranslator(replacement));</span>
+	}
+
+	public static Transformer replace(final Consumer parser, final Translator translator) {
+<span class="fc" id="L821">		return new ReplaceTransform(translator, parser);</span>
+	}
+
+	public static Parser optional(final Consumer parser) {
+<span class="fc" id="L825">		return repeat(0, 1, parser);</span>
+	}
+
+	public static Parser loptional(final Consumer parser) {
+<span class="fc" id="L829">		return lift(optional(parser));</span>
+	}
+
+	public static Parser lrepeat(final Consumer parser) {
+<span class="fc" id="L833">		return lift(repeat(parser));</span>
+	}
+
+	public static Parser lrepeat(final int min, final int max, final Consumer parser) {
+<span class="fc" id="L837">		return lift(repeat(min, max, parser));</span>
+	}
+
+	public static Parser repeat(final Consumer parser) {
+<span class="fc" id="L841">		return repeat(0, -1, parser);</span>
+	}
+
+	public static Parser repeat(final int min, final Consumer parser) {
+<span class="fc" id="L845">		return repeat(min, -1, parser);</span>
+	}
+
+	public static Parser repeat(final int min, final int max, final Consumer parser) {
+<span class="fc" id="L849">		return new RepeatParser(parser, null, min, max);</span>
+	}
+
+	/**
+	 * Parses a sequence between two simple delimiters, for example ( seq )
+	 * &lt;p&gt;
+	 * @param lsep left separator
+	 * @param item parser called between separators
+	 * @param rsep right separator
+	 *
+	 * @return Parser
+	 */
+	public static Parser between(final String lsep, final Consumer item, final String rsep) {
+<span class="fc" id="L862">		return sequence(skip(lsep), item, skip(rsep));</span>
+	}
+
+	/**
+	 * Variant of between() that lifts central item
+	 * &lt;p&gt;
+	 * @param lsep left separator
+	 * @param item parser called between separators
+	 * @param rsep right separator
+	 *
+	 * @return Parser
+	 */
+	public static Parser lbetween(final String lsep, final Consumer item, final String rsep) {
+<span class="fc" id="L875">		return sequence(skip(lsep), lift(item), skip(rsep));</span>
+	}
+
+	public static Parser delimitedSequence(final Consumer item, final String delimiter) {
+<span class="nc" id="L879">		return delimitedSequence(1, item, skip(delimiter));</span>
+	}
+
+	public static Parser delimitedSequence(final Consumer item, final CharacterMatcher delimiter) {
+<span class="nc" id="L883">		return delimitedSequence(1, item, skip(delimiter));</span>
+	}
+
+	public static Parser delimitedSequence(final Consumer item, final Consumer delimiter) {
+<span class="fc" id="L887">		return delimitedSequence(1, item, delimiter);</span>
+	}
+
+	public static Parser delimitedSequence(final int min, final Consumer item, final String delimiter) {
+<span class="nc" id="L891">		return delimitedSequence(min, item, skip(delimiter));</span>
+	}
+
+	public static Parser delimitedSequence(final int min, final Consumer item, final CharacterMatcher delimiter) {
+<span class="nc" id="L895">		return delimitedSequence(min, item, skip(delimiter));</span>
+	}
+
+	public static Parser delimitedSequence(final int min, final Consumer item, final Consumer delimiter) {
+<span class="fc bfc" id="L899" title="All 2 branches covered.">		if (min == 0)</span>
+<span class="fc" id="L900">			return sequence(loptional(lsequence(item, lrepeat(lsequence(delimiter, item)))));</span>
+<span class="fc" id="L901">		return sequence(item, lrepeat(min - 1, -1, lsequence(delimiter, item)));</span>
+	}
+
+	public static Parser lsequence(final Consumer... parsers) {
+<span class="fc" id="L905">		return lift(sequence(parsers));</span>
+	}
+
+	public static Parser sequence(final Consumer... parsers) {
+<span class="fc" id="L909">		return new SequenceParser(null, parsers);</span>
+	}
+
+	public static Parser preserve(final Consumer parser) {
+<span class="nc" id="L913">		return new InputPreservingParser(null, parser);</span>
+	}
+
+	public static Transformer peek(final Consumer parser) {
+<span class="nc" id="L917">		return skip(preserve(parser));</span>
+	}
+
+	public static Parser join(final Consumer parser) {
+<span class="fc" id="L921">		return new JoinTransform(parser, &quot;&quot;, null);</span>
+	}
+
+	public static Parser join(final Consumer parser, final String joint) {
+<span class="nc" id="L925">		return new JoinTransform(parser, joint, null);</span>
+	}
+
+	public static Parser lalternative(final Consumer... parsers) {
+<span class="fc" id="L929">		return lift(alternative(parsers));</span>
+	}
+
+	public static Parser alternative(final Consumer... parsers) {
+<span class="pc bpc" id="L933" title="1 of 2 branches missed.">		if (parsers.length == 0)</span>
+<span class="nc" id="L934">			throw new IllegalArgumentException(&quot;At least one parser required as argument&quot;);</span>
+<span class="fc" id="L935">		return new AlternativeParser(null, parsers);</span>
+	}
+
+	public static Transformer endOfInput() {
+<span class="nc" id="L939">		return new EndOfInputTransform();</span>
+	}
+
+	public static Parser terminal(Consumer p) {
+<span class="nc" id="L943">		return lsequence(p, endOfInput());</span>
+	}
+
+	public static ParserReference reference() {
+<span class="fc" id="L947">		return new ParserReferenceImpl();</span>
+	}
+
+	/**
+	 * Creates a grouping consumer.
+	 *
+	 * Mostly useful for debugging. Transparently delegates the consume() call to the provided parser.
+	 *
+	 * @param name The name of the group
+	 * @param parser The parser to delegate to
+	 * @return The group
+	 */
+	public static Group group(final String name, final Consumer parser) {
+<span class="nc" id="L960">		return new Group(name, parser);</span>
+	}
+
+	public static Consumer subparse(final Consumer scanner, final Consumer parser) {
+<span class="nc" id="L964">		return new SubParser(scanner, parser);</span>
+	}
+
+	public static Node parse(Consumer parser, CharSequence input) throws ParseException, FatalParseException {
+<span class="fc" id="L968">		final ParseContext context = new Contexts().parseContext(input.toString());</span>
+<span class="fc" id="L969">		final Node root = new Node(null);</span>
+<span class="fc" id="L970">		final ParseContext remaining = parser.consume(context, root);</span>
+<span class="pc bpc" id="L971" title="1 of 2 branches missed.">		if (remaining.length() &gt; 0)</span>
+<span class="nc" id="L972">			throw new ParseException(&quot;Remaining characters: &quot; + remaining.toString());</span>
+<span class="fc" id="L973">		return root.firstChild();</span>
+	}
+
+	public static Node sloppyParse(Consumer parser, CharSequence input) throws ParseException, FatalParseException {
+<span class="nc" id="L977">		final ParseContext context = new Contexts().parseContext(input.toString());</span>
+<span class="nc" id="L978">		final Node root = new Node(null);</span>
+<span class="nc" id="L979">		parser.consume(context, root);</span>
+<span class="nc" id="L980">		return root.firstChild();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span></div></body></html>

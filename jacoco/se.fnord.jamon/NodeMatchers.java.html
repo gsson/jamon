@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>NodeMatchers.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jamon</a> &gt; <a href="index.source.html" class="el_package">se.fnord.jamon</a> &gt; <span class="el_source">NodeMatchers.java</span></div><h1>NodeMatchers.java</h1><pre class="source lang-java linenums">package se.fnord.jamon;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+import se.fnord.jamon.internal.Contexts;
+import se.fnord.jamon.internal.PathStack;
+
+/**
+ * Utility to verify parse trees
+ */
+public class NodeMatchers {
+<span class="nc" id="L14">	private NodeMatchers() {</span>
+<span class="nc" id="L15">		throw new IllegalAccessError(&quot;No NodeMatchers for you!&quot;);</span>
+	}
+
+	private static final class Equality&lt;T&gt; implements Predicate&lt;T&gt; {
+		private final T reference;
+
+<span class="nc" id="L21">		public Equality(T reference) {</span>
+<span class="nc" id="L22">			this.reference = reference;</span>
+<span class="nc" id="L23">		}</span>
+
+		@Override
+        public boolean test(T value) {
+<span class="nc" id="L27">	        return Objects.equals(reference, value);</span>
+        }
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L32">		    return 16 + 31 * Objects.hashCode(reference);</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L37" title="All 6 branches missed.">			return (obj == this) || (obj instanceof Equality) &amp;&amp; Objects.equals(reference, ((Equality&lt;?&gt;) obj).reference);</span>
+		}
+	}
+
+	private static final class ChildCount implements NodeMatcher {
+		private final int count;
+
+<span class="nc" id="L44">		public ChildCount(int count) {</span>
+<span class="nc" id="L45">			this.count = count;</span>
+<span class="nc" id="L46">        }</span>
+
+		@Override
+		public boolean match(NodeContext context, Node n) {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">			return count == n.children().size();</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L55">		    return 1 + 31 * count;</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L60" title="All 6 branches missed.">			return (obj == this) || (obj instanceof ChildCount) &amp;&amp; count == ((ChildCount) obj).count;</span>
+		}
+	}
+
+	private static final class ForEachChild implements NodeMatcher {
+		private final NodeMatcher childMatcher;
+
+<span class="nc" id="L67">		public ForEachChild(NodeMatcher childMatcher) {</span>
+<span class="nc" id="L68">			this.childMatcher = childMatcher;</span>
+<span class="nc" id="L69">        }</span>
+
+		@Override
+		public boolean match(NodeContext context, Node n) {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">			for (Node c : n.children()) {</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">				if (!context.forChild(c).matches(childMatcher))</span>
+<span class="nc" id="L75">					return false;</span>
+<span class="nc" id="L76">			}</span>
+<span class="nc" id="L77">			return true;</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L82">		    return 2 + 31 * childMatcher.hashCode();</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L87" title="All 6 branches missed.">			return (obj == this) || (obj instanceof ForEachChild) &amp;&amp; Objects.equals(childMatcher, ((ForEachChild) obj).childMatcher);</span>
+		}
+	}
+
+	private static final class ForParent implements NodeMatcher {
+		private final NodeMatcher parentMatcher;
+
+<span class="nc" id="L94">		public ForParent(NodeMatcher parentMatcher) {</span>
+<span class="nc" id="L95">			this.parentMatcher = parentMatcher;</span>
+<span class="nc" id="L96">        }</span>
+
+		@Override
+		public boolean match(NodeContext context, Node n) {
+<span class="nc" id="L100">			return context.forParent().matches(parentMatcher);</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L105">		    return 3 + 31 * parentMatcher.hashCode();</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L110" title="All 6 branches missed.">			return (obj == this) || (obj instanceof ForParent) &amp;&amp; Objects.equals(parentMatcher, ((ForParent) obj).parentMatcher);</span>
+		}
+	}
+
+	private static final class Attachment implements NodeMatcher {
+		private final Predicate&lt;Object&gt; tester;
+
+<span class="nc" id="L117">		public Attachment(Predicate&lt;Object&gt; tester) {</span>
+<span class="nc" id="L118">			this.tester = tester;</span>
+<span class="nc" id="L119">        }</span>
+
+		@Override
+		public boolean match(NodeContext context, Node n) {
+<span class="nc" id="L123">			return tester.test(n.attachment());</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L128">		    return 4 + 31 * Objects.hashCode(tester);</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L133" title="All 6 branches missed.">			return (obj == this) || (obj instanceof Attachment) &amp;&amp; Objects.equals(tester, ((Attachment) obj).tester);</span>
+		}
+	}
+
+	private static final class Value implements NodeMatcher {
+		private final Predicate&lt;String&gt; tester;
+
+<span class="nc" id="L140">		public Value(Predicate&lt;String&gt; tester) {</span>
+<span class="nc" id="L141">			this.tester = tester;</span>
+<span class="nc" id="L142">        }</span>
+
+		@Override
+		public boolean match(NodeContext context, Node n) {
+<span class="nc" id="L146">			return tester.test(n.value());</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L151">		    return 5 + 31 * Objects.hashCode(tester);</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L156" title="All 6 branches missed.">			return (obj == this) || (obj instanceof Value) &amp;&amp; Objects.equals(tester, ((Value) obj).tester);</span>
+		}
+	}
+
+	private static final class Children implements NodeMatcher {
+		private final NodeMatcher[] matchers;
+
+<span class="nc" id="L163">		public Children(NodeMatcher[] matchers) {</span>
+<span class="nc" id="L164">			this.matchers = matchers;</span>
+<span class="nc" id="L165">        }</span>
+
+		@Override
+		public boolean match(NodeContext context, Node n) {
+<span class="nc" id="L169">			final List&lt;Node&gt; children = n.children();</span>
+<span class="nc" id="L170">			final int childCount = children.size();</span>
+
+<span class="nc bnc" id="L172" title="All 2 branches missed.">			if (matchers.length != childCount)</span>
+<span class="nc" id="L173">				return false;</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">			for (int i = 0; i &lt; childCount; i++) {</span>
+<span class="nc" id="L175">				Node child = children.get(i);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">				if (!context.forChild(child).matches(matchers[i]))</span>
+<span class="nc" id="L177">					return false;</span>
+			}
+<span class="nc" id="L179">			return true;</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L184">			int n = 6;</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">			for (NodeMatcher m : matchers)</span>
+<span class="nc" id="L186">				n = n + 31 * m.hashCode();</span>
+<span class="nc" id="L187">		    return n;</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L192" title="All 6 branches missed.">			return (obj == this) || (obj instanceof Children) &amp;&amp; Arrays.equals(matchers, ((Children) obj).matchers);</span>
+		}
+	}
+
+	private static final class And implements NodeMatcher {
+		private final NodeMatcher[] matchers;
+
+<span class="nc" id="L199">		public And(NodeMatcher[] matchers) {</span>
+<span class="nc" id="L200">			this.matchers = matchers;</span>
+<span class="nc" id="L201">        }</span>
+
+		@Override
+		public boolean match(NodeContext context, Node n) {
+<span class="nc bnc" id="L205" title="All 2 branches missed.">			for (NodeMatcher v : matchers)</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">				if (!context.matches(v))</span>
+<span class="nc" id="L207">					return false;</span>
+<span class="nc" id="L208">			return true;</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L213">			int n = 7;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">			for (NodeMatcher m : matchers)</span>
+<span class="nc" id="L215">				n = n + 31 * m.hashCode();</span>
+<span class="nc" id="L216">		    return n;</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L221" title="All 6 branches missed.">			return (obj == this) || (obj instanceof And) &amp;&amp; Arrays.equals(matchers, ((And) obj).matchers);</span>
+		}
+	}
+
+	private static final class Or implements NodeMatcher {
+		private final NodeMatcher[] matchers;
+
+<span class="nc" id="L228">		public Or(NodeMatcher[] matchers) {</span>
+<span class="nc" id="L229">			this.matchers = matchers;</span>
+<span class="nc" id="L230">        }</span>
+
+		@Override
+		public boolean match(NodeContext context, Node n) {
+<span class="nc bnc" id="L234" title="All 2 branches missed.">			for (NodeMatcher v : matchers)</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">				if (context.matches(v))</span>
+<span class="nc" id="L236">					return true;</span>
+<span class="nc" id="L237">			return false;</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L242">			int n = 8;</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">			for (NodeMatcher m : matchers)</span>
+<span class="nc" id="L244">				n = n + 31 * m.hashCode();</span>
+<span class="nc" id="L245">		    return n;</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L250" title="All 6 branches missed.">			return (obj == this) || (obj instanceof Or) &amp;&amp; Arrays.equals(matchers, ((Or) obj).matchers);</span>
+		}
+	}
+
+	/**
+	 * Verifies the number of children
+	 * @param count The number of children
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher childCount(final int count) {
+<span class="nc" id="L260">		return new ChildCount(count);</span>
+	}
+
+	/**
+	 * Verifies all children against the supplied NodeMatcher
+	 * @param matcher The matcher to run for each child
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher forEachChild(final NodeMatcher matcher) {
+<span class="nc" id="L269">		return new ForEachChild(matcher);</span>
+	}
+
+	/**
+	 * Verifies the parent against the supplied NodeMatcher
+	 * @param matcher The matcher to check the parent against
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher forParent(final NodeMatcher matcher) {
+<span class="nc" id="L278">		return new ForParent(matcher);</span>
+	}
+
+	/**
+	 * Verifies the node attachment
+	 * @param o The object to check for equality with the node attachment
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher attachment(final Object o) {
+<span class="nc" id="L287">		return testAttachment(new Equality&lt;&gt;(o));</span>
+	}
+
+	/**
+	 * Verifies the node attachment
+	 * @param tester The predicate to use when testing the attachment value
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher testAttachment(final Predicate&lt;Object&gt; tester) {
+<span class="nc" id="L296">		return new Attachment(tester);</span>
+	}
+
+	/**
+	 * Verifies the node value
+	 * @param s The string to check for equality with the node value
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher value(final String s) {
+<span class="nc" id="L305">		return testValue(new Equality&lt;&gt;(s));</span>
+	}
+
+	/**
+	 * Verifies the node value
+	 * @param tester The predicate to use when testing the node value
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher testValue(final Predicate&lt;String&gt; tester) {
+<span class="nc" id="L314">		return new Value(tester);</span>
+	}
+
+	/**
+	 * Verifies the child nodes. The number of children must be equal to the number of supplied NodeMatchers.
+	 * @param matchers The matchers to use when verifying children
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher children(final NodeMatcher ... matchers) {
+<span class="nc" id="L323">		return new Children(matchers);</span>
+	}
+
+	/**
+	 * The conjunction of zero or more NodeMatchers. Passing no NodeMatchers creates a NodeMatcher that always return true.
+	 * @param matchers The matchers whose results should be and:ed together
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher and(final NodeMatcher ... matchers) {
+<span class="nc" id="L332">		return new And(matchers);</span>
+	}
+
+	/**
+	 * The disjunction of zero or more NodeMatchers. Passing no matchers creates a matcher that always return false.
+	 * @param matchers The matchers whose results should be or:ed together
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher or(final NodeMatcher ... matchers) {
+<span class="nc" id="L341">		return new Or(matchers);</span>
+	}
+
+	/**
+	 * Verifies the attachment, value and children of a node.
+	 * Equivalent to:
+	 * &lt;p&gt;
+	 * &lt;code&gt;and(attachment(attachment), value(value), children(children))&lt;/code&gt;
+	 * &lt;p&gt;
+	 * @param attachment The object to check for equality with the node attachment
+	 * @param value The object to check for equality with the node value
+	 * @param matchers The matchers to use when verifying children
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher node(final Object attachment, final String value, final NodeMatcher ... matchers) {
+<span class="nc" id="L356">		return and(attachment(attachment), value(value), children(matchers));</span>
+	}
+
+	/**
+	 * Verifies that a node is empty, i.e. has no value, attachment or children
+	 * @return the constructed NodeMatcher
+	 */
+	public static NodeMatcher empty() {
+<span class="nc" id="L364">		return and(value(null), attachment(null), childCount(0));</span>
+	}
+
+	/**
+	 * Execute a node matcher on a Node path
+	 * @param matcher matcher to execute
+	 * @param path Nodes describing the path to the node where the matcher should start.
+	 * @return true if the matcher succeeds, false otherwise.
+	 */
+	public static boolean match(NodeMatcher matcher, Path path) {
+<span class="nc" id="L374">		final NodeContext context = new Contexts().nodeContext(path);</span>
+<span class="nc" id="L375">		return context.matches(matcher);</span>
+	}
+
+	private static class MatchFirstVisitor implements PathVisitor {
+		private final Contexts contextFactory;
+		private Path result;
+		private final NodeMatcher matcher;
+
+<span class="nc" id="L383">		public MatchFirstVisitor(Contexts contextFactory, NodeMatcher matcher) {</span>
+<span class="nc" id="L384">			this.contextFactory = contextFactory;</span>
+<span class="nc" id="L385">			this.matcher = matcher;</span>
+<span class="nc" id="L386">        }</span>
+
+		@Override
+        public boolean visit(Path path) {
+<span class="nc bnc" id="L390" title="All 2 branches missed.">			if (contextFactory.nodeContext(path).matches(matcher)) {</span>
+<span class="nc" id="L391">				result = path;</span>
+<span class="nc" id="L392">				return false;</span>
+			}
+<span class="nc" id="L394">			return true;</span>
+        }
+
+		public Path result() {
+<span class="nc" id="L398">	        return result;</span>
+        }
+	}
+
+	public static void traverseBreadthFirst(Path start, PathVisitor visitor) {
+<span class="fc" id="L403">		final PathStack stack = new PathStack();</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">		for (Path path = start; path != null; path = stack.poll()) {</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">			if (!visitor.visit(path))</span>
+<span class="nc" id="L406">				return;</span>
+
+<span class="fc" id="L408">			stack.append(path, path.leaf().children());</span>
+		}
+<span class="fc" id="L410">	}</span>
+
+	public static void traverseDepthFirst(Path start, PathVisitor visitor) {
+<span class="fc" id="L413">		final PathStack stack = new PathStack();</span>
+<span class="fc bfc" id="L414" title="All 2 branches covered.">		for (Path path = start; path != null; path = stack.poll()) {</span>
+<span class="pc bpc" id="L415" title="1 of 2 branches missed.">			if (!visitor.visit(path))</span>
+<span class="nc" id="L416">				return;</span>
+
+<span class="fc" id="L418">			stack.prepend(path, path.leaf().children());</span>
+		}
+<span class="fc" id="L420">	}</span>
+
+	/**
+	 * Find the first node matching the matcher using a depth first search.
+	 * @param matcher matcher to execute
+	 * @param path Nodes describing the path to the root of the sub-tree to search.
+	 * @return the first matching node found.
+	 */
+	public static Path findFirstDF(NodeMatcher matcher, Path path) {
+<span class="nc" id="L429">		MatchFirstVisitor visitor = new MatchFirstVisitor(new Contexts(), matcher);</span>
+<span class="nc" id="L430">		traverseDepthFirst(path, visitor);</span>
+<span class="nc" id="L431">		return visitor.result();</span>
+	}
+
+	/**
+	 * Find the first node matching the matcher using a breadth first search.
+	 * @param matcher matcher to execute
+	 * @param path Nodes describing the path to the root of the sub-tree to search.
+	 * @return the first matching node found.
+	 */
+	public static Path findFirstBF(NodeMatcher matcher, Path path) {
+<span class="nc" id="L441">		MatchFirstVisitor visitor = new MatchFirstVisitor(new Contexts(), matcher);</span>
+<span class="nc" id="L442">		traverseBreadthFirst(path, visitor);</span>
+<span class="nc" id="L443">		return visitor.result();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span></div></body></html>

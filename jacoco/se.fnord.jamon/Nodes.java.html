@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Nodes.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jamon</a> &gt; <a href="index.source.html" class="el_package">se.fnord.jamon</a> &gt; <span class="el_source">Nodes.java</span></div><h1>Nodes.java</h1><pre class="source lang-java linenums">package se.fnord.jamon;
+
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+
+<span class="fc" id="L8">public class Nodes {</span>
+<span class="fc" id="L9">	private final Map&lt;NodeBuilder, Node&gt; buildCache = new IdentityHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L11">	public class NodeBuilder {</span>
+<span class="fc" id="L12">		private NodeBuilder[] children = new NodeBuilder[0];</span>
+		private String value;
+<span class="fc" id="L14">		private AttachmentFactory attachmentFactory = new Parsers.StaticAttachmentFactory(null);</span>
+
+		public NodeBuilder attachment(Object attachment) {
+<span class="fc" id="L17">			this.attachmentFactory = new Parsers.StaticAttachmentFactory(attachment);</span>
+<span class="fc" id="L18">			return this;</span>
+		}
+
+		public NodeBuilder attachmentFactory(AttachmentFactory factory) {
+<span class="nc" id="L22">			this.attachmentFactory = factory;</span>
+<span class="nc" id="L23">			return this;</span>
+		}
+
+		public NodeBuilder value(String value) {
+<span class="fc" id="L27">			this.value = value;</span>
+<span class="fc" id="L28">			return this;</span>
+		}
+
+		public NodeBuilder children(NodeBuilder... children) {
+<span class="fc" id="L32">			this.children = children.clone();</span>
+<span class="fc" id="L33">			return this;</span>
+		}
+
+		private List&lt;Node&gt; buildChildren() {
+<span class="fc" id="L37">			final List&lt;Node&gt; list = new ArrayList&lt;&gt;(children.length);</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">			for (NodeBuilder c : children)</span>
+<span class="fc" id="L39">				list.add(c.build());</span>
+<span class="fc" id="L40">			return list;</span>
+		}
+
+		public Node build() {
+<span class="fc" id="L44">			Node node = buildCache.get(this);</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">			if (node != null)</span>
+<span class="nc" id="L46">				return node;</span>
+<span class="fc" id="L47">			List&lt;Node&gt; childrenList = buildChildren();</span>
+<span class="fc" id="L48">			node = new Node(value, attachmentFactory.create(value, childrenList)).addChildren(childrenList);</span>
+<span class="fc" id="L49">			Node oldNode = buildCache.put(this, node);</span>
+<span class="pc bpc" id="L50" title="3 of 4 branches missed.">			if (oldNode != null &amp;&amp; oldNode != node)</span>
+<span class="nc" id="L51">				throw new IllegalStateException(&quot;Inconsistent node creation&quot;);</span>
+<span class="fc" id="L52">			return node;</span>
+		}
+	}
+
+	public NodeBuilder node() {
+<span class="fc" id="L57">		return new NodeBuilder();</span>
+	}
+
+	public NodeBuilder node(String value, Object attachment) {
+<span class="fc" id="L61">		return node().value(value).attachment(attachment);</span>
+	}
+
+	public NodeBuilder node(String value) {
+<span class="fc" id="L65">		return node().value(value);</span>
+	}
+
+	public NodeBuilder node(String value, NodeBuilder... children) {
+<span class="fc" id="L69">		return node().value(value).children(children);</span>
+	}
+
+	public NodeBuilder node(String value, Object attachment, NodeBuilder... children) {
+<span class="fc" id="L73">		return node().value(value).attachment(attachment).children(children);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span></div></body></html>

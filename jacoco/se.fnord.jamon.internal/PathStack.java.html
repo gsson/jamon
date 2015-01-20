@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PathStack.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jamon</a> &gt; <a href="index.source.html" class="el_package">se.fnord.jamon.internal</a> &gt; <span class="el_source">PathStack.java</span></div><h1>PathStack.java</h1><pre class="source lang-java linenums">package se.fnord.jamon.internal;
+
+import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.Iterator;
+
+import se.fnord.jamon.Node;
+import se.fnord.jamon.Path;
+
+<span class="fc" id="L11">public class PathStack {</span>
+<span class="fc" id="L12">	private static final Holder EMPTY = new Holder(null, new ArrayDeque&lt;Node&gt;(0));</span>
+
+	private static final class Holder {
+		public final Path parent;
+		public final Deque&lt;Node&gt; children;
+
+<span class="fc" id="L18">		public Holder(Path parent, Deque&lt;Node&gt; children) {</span>
+<span class="fc" id="L19">			this.parent = parent;</span>
+<span class="fc" id="L20">			this.children = children;</span>
+<span class="fc" id="L21">		}</span>
+
+		public void buildString(StringBuilder sb) {
+<span class="nc" id="L24">			sb.append(&quot;[&quot;);</span>
+<span class="nc" id="L25">			Iterator&lt;Node&gt; iterator = children.iterator();</span>
+			Node n;
+<span class="nc bnc" id="L27" title="All 2 branches missed.">			if (iterator.hasNext()) {</span>
+<span class="nc" id="L28">				n = iterator.next();</span>
+<span class="nc" id="L29">				sb.append(parent.forChild(n).toString());</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">				while (iterator.hasNext()) {</span>
+<span class="nc" id="L31">					n = iterator.next();</span>
+<span class="nc" id="L32">					sb.append(&quot;, &quot;).append(parent.forChild(n).toString());</span>
+				}
+			}
+<span class="nc" id="L35">			sb.append(&quot;]&quot;);</span>
+<span class="nc" id="L36">		}</span>
+	}
+
+<span class="fc" id="L39">	private final Deque&lt;Holder&gt; queue = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L40">	private Holder current = EMPTY;</span>
+
+	public void prepend(Path parent, Collection&lt;Node&gt; children) {
+<span class="fc bfc" id="L43" title="All 2 branches covered.">		if (!children.isEmpty()) {</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">			if (!current.children.isEmpty())</span>
+<span class="fc" id="L45">				queue.addFirst(current);</span>
+<span class="fc" id="L46">			current = new Holder(parent, new ArrayDeque&lt;&gt;(children));</span>
+		}
+<span class="fc" id="L48">	}</span>
+
+	public void append(Path parent, Collection&lt;Node&gt; children) {
+<span class="fc bfc" id="L51" title="All 2 branches covered.">		if (!children.isEmpty()) {</span>
+<span class="fc bfc" id="L52" title="All 4 branches covered.">			if (queue.isEmpty() &amp;&amp; current.children.isEmpty())</span>
+<span class="fc" id="L53">				current = new Holder(parent, new ArrayDeque&lt;&gt;(children));</span>
+			else
+<span class="fc" id="L55">				queue.addLast(new Holder(parent, new ArrayDeque&lt;&gt;(children)));</span>
+		}
+<span class="fc" id="L57">	}</span>
+	
+	public Path poll() {
+<span class="fc" id="L60">		Node c = current.children.poll();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		if (c != null)</span>
+<span class="fc" id="L62">			return current.parent.forChild(c);</span>
+<span class="fc" id="L63">		Holder next = queue.poll();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (next == null) {</span>
+<span class="fc" id="L65">			current = EMPTY;</span>
+<span class="fc" id="L66">			return null;</span>
+		}
+<span class="fc" id="L68">		current = next;</span>
+<span class="fc" id="L69">		c = current.children.poll();</span>
+<span class="fc" id="L70">		return current.parent.forChild(c);</span>
+	}
+
+	public boolean isEmpty() {
+<span class="fc bfc" id="L74" title="All 4 branches covered.">		return current.children.isEmpty() &amp;&amp; queue.isEmpty();</span>
+	}
+	
+	@Override
+	public String toString() {
+<span class="nc" id="L79">		StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L80">		b.append(&quot;PathStack[&quot;);</span>
+<span class="nc" id="L81">		current.buildString(b);</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">		for (Holder h : queue) {</span>
+<span class="nc" id="L83">			b.append(&quot;, &quot;);</span>
+<span class="nc" id="L84">			h.buildString(b);</span>
+<span class="nc" id="L85">		}</span>
+<span class="nc" id="L86">		b.append(&quot;]&quot;);</span>
+<span class="nc" id="L87">		return b.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span></div></body></html>

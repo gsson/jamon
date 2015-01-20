@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CharacterMatchers.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jamon</a> &gt; <a href="index.source.html" class="el_package">se.fnord.jamon</a> &gt; <span class="el_source">CharacterMatchers.java</span></div><h1>CharacterMatchers.java</h1><pre class="source lang-java linenums">package se.fnord.jamon;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+public class CharacterMatchers {
+<span class="nc" id="L8">	private CharacterMatchers() {</span>
+<span class="nc" id="L9">		throw new IllegalAccessError(&quot;No CharacterMatchers for you!&quot;);</span>
+	}
+
+	public static CharacterMatcher not(final CharacterMatcher matcher) {
+<span class="fc" id="L13">		return new CharacterMatcher() {</span>
+			@Override
+            public boolean match(char ch) {
+<span class="fc bfc" id="L16" title="All 2 branches covered.">				return !matcher.match(ch);</span>
+            }
+
+			@Override
+			public String toString() {
+<span class="nc" id="L21">				return &quot;not(&quot;+matcher+&quot;)&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher not(char ... chars) {
+<span class="fc" id="L27">		return not(match(chars));</span>
+	}
+
+	public static CharacterMatcher and(final CharacterMatcher ... matchers) {
+<span class="fc" id="L31">		return new CharacterMatcher() {</span>
+			@Override
+            public boolean match(char ch) {
+<span class="fc bfc" id="L34" title="All 2 branches covered.">				for (CharacterMatcher matcher : matchers)</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">					if (!matcher.match(ch))</span>
+<span class="fc" id="L36">						return false;</span>
+<span class="fc" id="L37">				return true;</span>
+            }
+
+			@Override
+			public String toString() {
+<span class="nc" id="L42">				return &quot;and(&quot;+Arrays.toString(matchers)+&quot;)&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher or(final CharacterMatcher ... matchers) {
+<span class="fc" id="L48">		return new CharacterMatcher() {</span>
+			@Override
+            public boolean match(char ch) {
+<span class="fc bfc" id="L51" title="All 2 branches covered.">				for (CharacterMatcher matcher : matchers)</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">					if (matcher.match(ch))</span>
+<span class="fc" id="L53">						return true;</span>
+<span class="fc" id="L54">				return false;</span>
+            }
+
+			@Override
+			public String toString() {
+<span class="nc" id="L59">				return &quot;or(&quot;+Arrays.toString(matchers)+&quot;)&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher newline() {
+<span class="fc" id="L65">		return match('\r', '\n');</span>
+	}
+
+	public static CharacterMatcher letter() {
+<span class="fc" id="L69">		return new CharacterMatcher() {</span>
+			@Override
+			public boolean match(char ch) {
+<span class="fc" id="L72">				return Character.isLetter(ch);</span>
+			}
+
+			@Override
+			public String toString() {
+<span class="nc" id="L77">			    return &quot;match[alpha]&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher white() {
+<span class="fc" id="L83">		return new CharacterMatcher() {</span>
+			@Override
+			public boolean match(char ch) {
+<span class="pc bpc" id="L86" title="2 of 6 branches missed.">				return Character.isWhitespace(ch) &amp;&amp; ch != '\n' &amp;&amp; ch != '\r';</span>
+			}
+
+			@Override
+			public String toString() {
+<span class="nc" id="L91">			    return &quot;match[white]&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher identifierStart() {
+<span class="nc" id="L97">		return new CharacterMatcher() {</span>
+			@Override
+			public boolean match(char ch) {
+<span class="nc" id="L100">				return Character.isJavaIdentifierStart(ch);</span>
+			}
+
+			@Override
+			public String toString() {
+<span class="nc" id="L105">			    return &quot;match[identifierStart]&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher identifierPart() {
+<span class="nc" id="L111">		return new CharacterMatcher() {</span>
+			@Override
+			public boolean match(char ch) {
+<span class="nc" id="L114">				return Character.isJavaIdentifierPart(ch);</span>
+			}
+
+			@Override
+			public String toString() {
+<span class="nc" id="L119">			    return &quot;match[identifierPart]&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher upper() {
+<span class="nc" id="L125">		return new CharacterMatcher() {</span>
+			@Override
+			public boolean match(char ch) {
+<span class="nc" id="L128">				return Character.isUpperCase(ch);</span>
+			}
+
+			@Override
+			public String toString() {
+<span class="nc" id="L133">			    return &quot;match[uppercase]&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher lower() {
+<span class="nc" id="L139">		return new CharacterMatcher() {</span>
+			@Override
+			public boolean match(char ch) {
+<span class="nc" id="L142">				return Character.isLowerCase(ch);</span>
+			}
+
+			@Override
+			public String toString() {
+<span class="nc" id="L147">			    return &quot;match[lowercase]&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher digit() {
+<span class="fc" id="L153">		return new CharacterMatcher() {</span>
+			@Override
+			public boolean match(char ch) {
+<span class="fc" id="L156">				return Character.isDigit(ch);</span>
+			}
+
+			@Override
+			public String toString() {
+<span class="nc" id="L161">			    return &quot;match[digits]&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher digit(final int radix) {
+<span class="fc" id="L167">		return new CharacterMatcher() {</span>
+			@Override
+			public boolean match(char ch) {
+<span class="nc bnc" id="L170" title="All 2 branches missed.">				return Character.digit(ch, radix) != -1;</span>
+			}
+
+			@Override
+			public String toString() {
+<span class="nc" id="L175">			    return &quot;match[digits of base &quot; + radix + &quot;]&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher control() {
+<span class="fc" id="L181">		return new CharacterMatcher() {</span>
+			@Override
+			public boolean match(char ch) {
+<span class="fc" id="L184">				return Character.isISOControl(ch);</span>
+			}
+
+			@Override
+			public String toString() {
+<span class="nc" id="L189">				return &quot;match[control]&quot;;</span>
+			}
+		};
+	}
+
+	public static CharacterMatcher match(char ...chars) {
+<span class="fc" id="L195">		final Set&lt;Character&gt; characters = new HashSet&lt;Character&gt;(chars.length);</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">		for (char ch : chars)</span>
+<span class="fc" id="L197">			characters.add(ch);</span>
+<span class="fc" id="L198">		return new CharacterMatcher() {</span>
+			@Override
+            public boolean match(char ch) {
+<span class="fc" id="L201">	            return characters.contains(ch);</span>
+            }
+
+			@Override
+			public String toString() {
+<span class="nc" id="L206">				return &quot;match[&quot; + characters + &quot;]&quot;;</span>
+			}
+		};
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span></div></body></html>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Contexts.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jamon</a> &gt; <a href="index.source.html" class="el_package">se.fnord.jamon.internal</a> &gt; <span class="el_source">Contexts.java</span></div><h1>Contexts.java</h1><pre class="source lang-java linenums">package se.fnord.jamon.internal;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import se.fnord.jamon.Node;
+import se.fnord.jamon.NodeContext;
+import se.fnord.jamon.ParseContext;
+import se.fnord.jamon.Path;
+
+<span class="fc" id="L11">public class Contexts {</span>
+<span class="fc" id="L12">	private final Map&lt;ParseContextImpl.CacheKey, Node&gt; parseCache = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L13">	private final Map&lt;NodeContextImpl.CacheKey, Boolean&gt; matchCache = new HashMap&lt;&gt;();</span>
+
+	public ParseContext parseContext(String input) {
+<span class="fc" id="L16">		return new ParseContextImpl(0, input.toCharArray(), parseCache);</span>
+	}
+
+	public NodeContext nodeContext(Path path) {
+<span class="nc" id="L20">		return new NodeContextImpl(path, matchCache);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span></div></body></html>

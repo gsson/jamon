@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ParseContextImpl.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jamon</a> &gt; <a href="index.source.html" class="el_package">se.fnord.jamon.internal</a> &gt; <span class="el_source">ParseContextImpl.java</span></div><h1>ParseContextImpl.java</h1><pre class="source lang-java linenums">package se.fnord.jamon.internal;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+import se.fnord.jamon.Consumer;
+import se.fnord.jamon.Node;
+import se.fnord.jamon.ParseContext;
+import se.fnord.jamon.ParseException;
+
+public class ParseContextImpl implements ParseContext {
+<span class="fc" id="L13">	private static final Node NONMATCHING = new Node();</span>
+
+	public final class CacheKey {
+		private final int start;
+		private final Consumer group;
+
+<span class="fc" id="L19">		public CacheKey(int start, Consumer group) {</span>
+<span class="fc" id="L20">			this.start = start;</span>
+<span class="fc" id="L21">			this.group = group;</span>
+<span class="fc" id="L22">		}</span>
+
+		public int start() {
+<span class="nc" id="L25">			return start;</span>
+		}
+
+		public Consumer group() {
+<span class="nc" id="L29">			return group;</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L34">			return String.format(&quot;{ %d, %s }&quot;, start, Objects.toString(group));</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="fc" id="L39">			return start * 31 + System.identityHashCode(group);</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">			if (this == obj)</span>
+<span class="nc" id="L45">				return true;</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">			if (!(obj instanceof CacheKey))</span>
+<span class="nc" id="L47">				return false;</span>
+<span class="fc" id="L48">			final CacheKey that = (CacheKey) obj;</span>
+<span class="pc bpc" id="L49" title="2 of 4 branches missed.">			return this.start == that.start &amp;&amp; this.group == that.group; // Yes, we really do want instance checks.</span>
+		}
+	}
+
+	private final Map&lt;CacheKey, Node&gt; nodeCache;
+	private final char[] chars;
+	private final int start;
+	private final int end;
+
+	ParseContextImpl(int start, char[] chars) {
+<span class="nc" id="L59">		this(start, chars, new HashMap&lt;CacheKey, Node&gt;());</span>
+<span class="nc" id="L60">	}</span>
+
+	ParseContextImpl(int start, char[] chars, Map&lt;CacheKey, Node&gt; nodeCache) {
+<span class="fc" id="L63">		this(start, chars.length, chars, nodeCache);</span>
+<span class="fc" id="L64">	}</span>
+
+<span class="fc" id="L66">	ParseContextImpl(int start, int end, char[] chars, Map&lt;CacheKey, Node&gt; nodeCache) {</span>
+<span class="fc" id="L67">		this.chars = chars;</span>
+<span class="fc" id="L68">		this.start = start;</span>
+<span class="fc" id="L69">		this.end = end;</span>
+<span class="fc" id="L70">		this.nodeCache = nodeCache;</span>
+<span class="fc" id="L71">	}</span>
+
+	public Node consumerMatched(Consumer group) throws ParseException {
+<span class="fc" id="L74">		Node n = nodeCache.get(new CacheKey(start, group));</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">		if (n == NONMATCHING)</span>
+<span class="nc" id="L76">			throw new ParseException();</span>
+<span class="fc" id="L77">		return n;</span>
+	}
+
+	public Node consumerMatches(Consumer group, Node node) {
+<span class="fc" id="L81">		CacheKey key = new CacheKey(start, group);</span>
+<span class="fc" id="L82">		Node oldNode = nodeCache.get(key);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">		if (oldNode != null) {</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">			if (!oldNode.equals(node))</span>
+<span class="nc" id="L85">				throw new IllegalStateException(&quot;The (start, parser) yielded different results on different rounds&quot;);</span>
+<span class="nc" id="L86">			return oldNode;</span>
+		}
+<span class="fc" id="L88">		nodeCache.put(key, node);</span>
+<span class="fc" id="L89">		return node;</span>
+	}
+
+	public void consumerMismatches(Consumer group) {
+<span class="fc" id="L93">		Node oldNode = nodeCache.put(new CacheKey(start, group), NONMATCHING);</span>
+<span class="pc bpc" id="L94" title="3 of 4 branches missed.">		if (oldNode != null &amp;&amp; oldNode != NONMATCHING)</span>
+<span class="nc" id="L95">			throw new IllegalStateException(&quot;The (start, parser) yielded different results on different rounds&quot;);</span>
+<span class="fc" id="L96">	}</span>
+
+	@Override
+	public int start() {
+<span class="fc" id="L100">		return start;</span>
+	}
+
+	@Override
+	public int end() {
+<span class="nc" id="L105">		return end;</span>
+	}
+
+	@Override
+	public int length() {
+<span class="fc" id="L110">		return end - start;</span>
+	}
+
+	@Override
+	public char charAt(int index) {
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		if (index &gt;= end)</span>
+<span class="nc" id="L116">			throw new IndexOutOfBoundsException();</span>
+<span class="fc" id="L117">		return chars[start + index];</span>
+	}
+
+	@Override
+	public ParseContext splice(int splicePoint) {
+<span class="fc" id="L122">		return new ParseContextImpl(splicePoint, end, chars, nodeCache);</span>
+	}
+
+	@Override
+	public ParseContext splice(int splicePoint, int end) {
+<span class="nc" id="L127">		return new ParseContextImpl(splicePoint, end, chars, nodeCache);</span>
+	}
+
+	@Override
+    public Node node(int index, Object attachment) {
+<span class="fc" id="L132">	    return new Node(start, start + index, new String(chars, start, index), attachment);</span>
+    }
+
+	@Override
+    public Node node(int index, String value, Object attachment) {
+<span class="fc" id="L137">	    return new Node(start, start + index, value, attachment);</span>
+    }
+
+	@Override
+	public String toString() {
+<span class="nc" id="L142">	    return new String(chars, start, Math.min(chars.length - start, 16));</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.1.201405082137</span></div></body></html>
