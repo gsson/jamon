@@ -1,0 +1,316 @@
+import org.gradle.plugins.signing.Sign
+
+apply plugin: 'java'
+
+apply plugin: 'org.ajoberstar.github-pages'
+apply plugin: 'jacoco'
+
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+       classpath 'org.ajoberstar:gradle-git:0.12.0'
+    }
+}
+
+sourceCompatibility = 1.7
+
+group = 'se.fnord'
+
+
+ext.startTime = new Date()
+
+ext.isRelease = System.getenv('RELEASE') ? true : false;
+ext.isTravis = System.getenv('TRAVIS') ? true : false;
+
+ext.plainVersion = '1.1'
+ext.versionSuffix = isRelease ? '' : '-SNAPSHOT'
+
+ext.bundleVersion = osgiVersion(plainVersion, isRelease, startTime)
+ext.bundleName = "${group}.${name}"
+ext.bundleSymbolicName = 'Jamon'
+
+
+[
+        'repositoryUrl': 'REPO_URI',
+        'repositoryUsername': 'REPO_USER',
+        'repositoryPassword': 'REPO_PASSWORD'
+].each() {prop, env -> ext[prop]=System.getenv(env)}
+
+[
+        'githubUrl': 'GH_URI',
+        'githubUsername': 'GH_USER',
+        'githubPassword': 'GH_TOKEN'
+].each() {prop, env -> ext[prop]=System.getenv(env)}
+
+[
+        'signing.secretKeyRingFile': 'GPG_KEYFILE',
+        'signing.keyId': 'GPG_KEYID',
+        'signing.password': 'GPG_PASSWORD'
+].each() {prop, env ->
+        def v = System.getenv(env)?.trim()
+        if (v)
+            ext[prop] = v
+}
+
+ext.sharedManifest = manifest {
+    attributes(
+        "Bundle-ManifestVersion": 2,
+        "Bundle-Version": bundleVersion,
+        "Bundle-Vendor": "Henrik Gustafsson <henrik.gustafsson@fnord.se>",
+        "Bundle-SymbolicName": bundleSymbolicName,
+        "Bundle-Name": bundleName,
+    )
+}
+
+version = plainVersion + versionSuffix
+
+gradle.taskGraph.whenReady { tg -> checkEnvironment(tg) }
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+jar {
+    manifest = project.manifest {
+        from sharedManifest
+        from project.manifest {
+            attributes(
+                "Export-Package": "se.fnord.jamon",
+                "Require-Capability": "osgi.ee;filter:=\"(&(osgi.ee=JavaSE)(version>=" + project.targetCompatibility + "))\""
+            )
+        }
+    }
+    archiveName = "${bundleName}-${version}.${extension}"
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+
+    manifest {
+        from sharedManifest
+        from project.manifest {
+            attributes(
+                "Eclipse-SourceBundle": "${bundleName};version=\"${bundleVersion}\";roots:=\".\"",
+                "Bundle-SymbolicName": "${bundleSymbolicName} (Sources)",
+                "Bundle-Name": "${bundleName}.sources",
+            )
+        }
+    }
+    archiveName = "${bundleName}-${version}-sources.${extension}"
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+    manifest {
+        from sharedManifest
+        from project.manifest {
+            attributes(
+                    "Bundle-SymbolicName": "${bundleSymbolicName} (Javadoc)",
+                    "Bundle-Name": "${bundleName}.javadoc",
+            )
+        }
+    }
+    archiveName = "${bundleName}-${version}-javadoc.${extension}"
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+    archives javadocJar
+}
+
+
+signing {
+    required { isRelease && gradle.taskGraph.hasTask(":uploadArchives") }
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: repositoryUrl) {
+                authentication(userName: repositoryUsername, password: repositoryPassword)
+            }
+
+            pom.project {
+                name project.name
+                packaging 'jar'
+                description 'Java combinatoric parser'
+                url 'http://gsson.github.io/jamon/'
+
+                scm {
+                    url githubUrl
+                    connection githubUrl
+                    developerConnection githubUrl
+                }
+
+                licenses {
+                    license {
+                        name 'ISC License'
+                        url 'http://opensource.org/licenses/ISC'
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'gsson'
+                        name 'Henrik Gustafsson'
+                    }
+                }
+            }
+        }
+    }
+}
+
+test {
+    testLogging {
+        events "failed"
+        showStackTraces true
+        exceptionFormat "full"
+        showCauses true
+        showStandardStreams true
+    }
+}
+
+jacocoTestReport {
+    dependsOn test
+}
+
+publishGhPages {
+    dependsOn jacocoTestReport
+    dependsOn javadoc
+}
+
+githubPages {
+    repoUri = githubUrl
+    credentials {
+        username = githubUsername
+        password = githubPassword
+    }
+    pages {
+        from("$jacoco.reportsDir/test/html") {
+            into('jacoco/')
+        }
+        from(javadoc.outputs.files) {
+            into('javadoc/')
+        }
+    }
+}
+
+import java.util.regex.Pattern
+
+def normalizeVersion(v, extra) {
+    def version = ""
+    def n = 0
+    def hasQualifier = false
+    def segment = 0
+
+    def match = v =~ /(\p{Digit}+)(?:[.](\p{Digit}+))?(?:[.](\p{Digit}+))?(?:[.-](.*))?/
+	def parts = match[0]
+
+	def mainVersion = (parts[1] ?: '0') + '.' + (parts[2] ?: '0') + '.' + (parts[3] ?: '0')
+	def qualifier = parts[4] ? (extra ? (parts[4] + '-' + extra) : parts[4]) : (extra ?: '')
+    return qualifier ? (mainVersion + '.' + qualifier) : mainVersion 
+}
+
+def osgiVersion(version, isRelease, date) {
+    // Stupid over-engineered attempt att making OSGi version numbers
+    // that compare reasonably to maven version numbers. Uses
+    // <version>.a<timestamp> for snapshot versions and
+    // <version>.z<timestamp> for non-snapshot versions.
+    //
+    // Examples:
+    // 0.1.0 -> 0.1.0.z201401012330
+    // 0.1.0-SNAPSHOT -> 0.1.0.a201401012330
+    // 0.1.0-beta2-SNAPSHOT -> 0.1.0.beta2-a201401012330
+    // 0.1.0-beta2 -> 0.1.0.beta2-z201401012330
+    //
+    // This is because Maven thinks anything ending with -SNAPSHOT
+    // has a lower version than anything else, and osgi uses lexicographic
+    // comparison of the qualifier, which means eg. osgi version
+    // "1.0.0.SNAPSHOT" is a higher version than "1.0.0" or "1.0.0.RELEASE"
+    //
+    // See eg. http://www.infoq.com/news/2012/04/osgi-snapshot
+
+    def timestamp = date.format("yyyyMMddHHmm", TimeZone.getTimeZone("UTC"))
+    def suffix = isRelease ? "z${timestamp}":"a${timestamp}"
+
+    return normalizeVersion(version, suffix)
+}
+
+def getProperty(obj, propName, prompt) {
+
+    if (!obj.hasProperty(propName) || !obj[propName]) {
+        Console console = System.console()
+        if (isTravis || !console)
+            throw new InvalidUserDataException("Console unavailable. Need to fetch " + propName)
+
+        def value;
+        if (!propName.toLowerCase().contains("pass"))
+            value = console.readLine(prompt)
+        else
+            value = console.readPassword(prompt)
+        if (value)
+            obj.ext[propName] = value
+    }
+}
+
+def getProperties(obj, descr) {
+    descr.each() { name, prompt -> getProperty(obj, name, prompt) }
+}
+
+def checkEnvironment(taskGraph) {
+    if (isRelease && isTravis)
+        throw new InvalidUserDataException("Can't do release builds on a travis instance");
+
+    if ((version.endsWith("-SNAPSHOT") && isRelease) || (!version.endsWith("-SNAPSHOT") && !isRelease))
+        throw new InvalidUserDataException("Invalid version name");
+
+    if (taskGraph.allTasks.any { it instanceof Sign && it.required }) {
+        getProperties(this, [
+                "signing.keyId": "PGP Key Id: ",
+                "signing.secretKeyRingFile": "PGP Secret Key Ring File (absolute path): ",
+                "signing.password": "PGP Private Key Passphrase: "
+        ])
+        if (!(this."signing.keyId" && this."signing.secretKeyRingFile" && this."signing.password"))
+            throw new InvalidUserDataException("Missing repository publishing information");
+    }
+
+    if (taskGraph.hasTask(":uploadArchives")) {
+        getProperties(this, [
+                "repositoryUrl": "Maven repository URL: ",
+                "repositoryUsername": "Maven repository username: ",
+                "repositoryPassword": "Maven repository password: ",
+                "githubUrl": "GitHub repository URL: "
+        ]);
+
+        if (!(repositoryUrl && repositoryUsername && repositoryPassword && githubUrl))
+            throw new InvalidUserDataException("Missing repository publishing information");
+    }
+
+
+    if (taskGraph.hasTask(":publishGhPages")) {
+        getProperties(this, [
+                "githubUrl": "GitHub repository URL: ",
+                "githubUsername": "GitHub repository username: ",
+                "githubPassword": "GitHub repository password: "
+        ]);
+        if (!(githubUrl && githubUsername && githubPassword))
+            throw new InvalidUserDataException("Missing GitHub publishing information");
+    }
+
+}
