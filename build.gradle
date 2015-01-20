@@ -27,7 +27,7 @@ ext.startTime = new Date()
 ext.isRelease = System.getenv('RELEASE') ? true : false;
 ext.isTravis = System.getenv('TRAVIS') ? true : false;
 
-ext.plainVersion = '1.1'
+ext.plainVersion = '1.1.0'
 ext.versionSuffix = isRelease ? '' : '-SNAPSHOT'
 
 ext.bundleVersion = osgiVersion(plainVersion, isRelease, startTime)
