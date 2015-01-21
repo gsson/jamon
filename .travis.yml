@@ -1,10 +1,14 @@
 env:
   global:
     - TERM=dumb
+    - REPO_URI=https://oss.sonatype.org/content/repositories/snapshots/
+    - secure: "DlcHKqF3NLH9Bnl1bWUb3aB9pSvw1CZWbw60Nj54f42jMFRvyLvhV551k4Dcqb7SsAPOp1nFKN8gEgjwEl25uR3PqeFy5PaZ53Ap/uqeS/6VQMCS/QlLA1b9Zed5989pFH62MzwY5tPtEICd+TrCabrk1wu+qvOklyLtDeFK2e0="
 
 language: java
 
 script: gradle -Djava.awt.headless=true clean check
+after_success:
+  - gradle -Djava.awt.headless=true uploadArchives
 
 branches:
   only:
