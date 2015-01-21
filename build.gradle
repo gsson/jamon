@@ -24,8 +24,8 @@ group = 'se.fnord'
 
 ext.startTime = new Date()
 
-ext.isRelease = System.getenv('RELEASE') ? true : false;
-ext.isTravis = System.getenv('TRAVIS') ? true : false;
+ext.isRelease = (System.getenv('RELEASE') == 'true') ? true : false;
+ext.isTravis = (System.getenv('TRAVIS') == 'true') ? true : false;
 
 ext.plainVersion = '1.1.0'
 ext.versionSuffix = isRelease ? '' : '-SNAPSHOT'
