@@ -2,7 +2,9 @@ env:
   global:
     - TERM=dumb
     - REPO_URI=https://oss.sonatype.org/content/repositories/snapshots/
-    - secure: "DlcHKqF3NLH9Bnl1bWUb3aB9pSvw1CZWbw60Nj54f42jMFRvyLvhV551k4Dcqb7SsAPOp1nFKN8gEgjwEl25uR3PqeFy5PaZ53Ap/uqeS/6VQMCS/QlLA1b9Zed5989pFH62MzwY5tPtEICd+TrCabrk1wu+qvOklyLtDeFK2e0="
+    - secure: "azre+0SwZqjveUxneZ0uP60Qs8L34OkLbbbuCajSfLR00+UGzryp5AnyZ9qTzvZgPvbiPuXuli4G3l/QH0Fi3jUHsD4nyiFWZghzDVP8nZ4XHh6w8/1mganuSQJXGrk6CldRoUhE9vi+fFg3w2FbEG8ydrSENKPjCtjNFehJ4tU="
+    - GH_URI=https://github.com/gsson/jamon
+    - secure: "QiOo9fCUb9SMal+Fwmdyu21Kfj+2N9+WvtIkZboYYuq0jc4obI06FAA1s1VFpVn3JYdZ1LhPcMJicZWfJ6ZVwAHc03ADgGIZW3YsJ2AMC+Uef/aZMDduxdh1BixHL1RzhqmCNTa93lXMZorefQ71ELiVXJEaODgCPBBURKvdzH0="
 
 language: java
 
